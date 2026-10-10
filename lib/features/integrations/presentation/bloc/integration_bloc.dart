@@ -340,6 +340,7 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
             connection: record,
           ),
         );
+        await _restoreCachedData(record, emit);
         add(const IntegrationDataRefreshRequested());
         return;
       }
@@ -454,6 +455,14 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     IntegrationDisconnectRequested event,
     Emitter<IntegrationState> emit,
   ) async {
+    final accountId = _accountCacheId(state.connection);
+    if (accountId != null) {
+      try {
+        await (await _snapshotStoreFactory()).clearAccount(accountId);
+      } catch (_) {
+        // Disconnect must still complete when local cache cleanup fails.
+      }
+    }
     try {
       await provider.disconnect();
     } catch (_) {
@@ -474,7 +483,8 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     final hadData =
         state.profile != null ||
         state.repositories.isNotEmpty ||
-        state.activities.isNotEmpty;
+        state.activities.isNotEmpty ||
+        state.contributions != null;
     emit(
       state.copyWith(
         isLoadingData: !hadData,
@@ -518,6 +528,14 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
       lastSyncedAt: failure == null ? DateTime.now() : null,
     );
 
+    await _persistSuccessfulSnapshots(
+      state,
+      profile: profile,
+      repositories: repositories,
+      activities: activities,
+      contributions: contributions,
+    );
+
     if (failure == null && updatedRecord != null) {
       try {
         await (await _store()).save(updatedRecord);
@@ -541,6 +559,7 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
         isLoadingData: false,
         isRefreshing: false,
         failure: failure,
+        isStale: failure != null,
       ),
     );
   }
