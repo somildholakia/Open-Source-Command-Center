@@ -166,7 +166,7 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   Widget _buildHeader() {
-    return const CartoonPageBanner(
+    return CartoonPageBanner(
       eyebrow: 'Start your quest',
       title: 'Create New Agent',
       subtitle: 'Join the ranks of open source contributors',
