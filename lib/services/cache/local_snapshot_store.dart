@@ -121,7 +121,7 @@ class LocalSnapshotStore {
   /// Clears only this account's snapshots, leaving other accounts and app
   /// preferences untouched. Call on explicit local-data deletion/disconnect.
   Future<void> clearAccount(String accountId) async {
-    final prefix = _prefix + _encode(accountId) + ':';
+    final prefix = '$_prefix${_encode(accountId)}:';
     final keys = _preferences
         .getKeys()
         .where((key) => key.startsWith(prefix))
@@ -132,7 +132,7 @@ class LocalSnapshotStore {
   }
 
   String _key(String accountId, String namespace) =>
-      _prefix + _encode(accountId) + ':' + _encode(namespace);
+      '$_prefix${_encode(accountId)}:${_encode(namespace)}';
 
   String _encode(String value) =>
       base64Url.encode(utf8.encode(value)).replaceAll('=', '');
