@@ -7,6 +7,7 @@ import '../../../../core/widgets/cartoon_welcome_banner.dart';
 import '../../../integrations/presentation/widgets/cached_data_notice.dart';
 import '../widgets/attention_feed_placeholder.dart';
 import '../widgets/dashboard_header.dart';
+import '../widgets/dashboard_activity_summary.dart';
 import '../widgets/dashboard_repositories_section.dart';
 import '../widgets/github_connect_hero_card.dart';
 import '../widgets/stats_overview_grid.dart';
@@ -55,6 +56,11 @@ class DashboardPage extends StatelessWidget {
 
                 // Telemetry & Contribution Overview Metrics
                 const StatsOverviewGrid(),
+                AppSpacing.vSpaceLg,
+
+                // Recent provider activity, kept compact for the dashboard.
+                const DashboardActivitySummary(),
+                AppSpacing.vSpaceLg,
 
                 // Latest repositories (hidden while disconnected)
                 const DashboardRepositoriesSection(),
