@@ -96,12 +96,6 @@ class DashboardActivitySummary extends StatelessWidget {
                           ),
                         ),
                       ),
-                      TextButton(
-                        onPressed: () => context
-                            .read<IntegrationBloc>()
-                            .add(const IntegrationDataRefreshRequested()),
-                        child: const Text('Retry'),
-                      ),
                     ],
                   ),
                 ),
