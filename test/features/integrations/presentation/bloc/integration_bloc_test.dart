@@ -587,15 +587,14 @@ void main() {
             ),
           );
           expect(maximumConcurrentRequests, 4);
+          await waitFor(bloc, (state) => !state.isBusy);
+          expect(bloc.state.profile, isNotNull);
+          expect(bloc.state.repositories, hasLength(1));
+          expect(bloc.state.failure, isNull);
         } finally {
           if (!releaseRequests.isCompleted) releaseRequests.complete();
+          await bloc.close();
         }
-
-        await waitFor(bloc, (state) => !state.isBusy);
-        expect(bloc.state.profile, isNotNull);
-        expect(bloc.state.repositories, hasLength(1));
-        expect(bloc.state.failure, isNull);
-        await bloc.close();
       },
     );
 
