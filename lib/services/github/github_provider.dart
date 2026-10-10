@@ -180,8 +180,18 @@ class GitHubProvider implements DeveloperProvider {
 
   @override
   Future<List<DeveloperActivity>> fetchActivity({int limit = 30}) async {
+    // GitHub's public user-events endpoint is username-scoped:
+    // GET /users/{username}/events/public. The connection record is local, so
+    // this avoids an extra profile request on the normal connected path.
+    final store = await _connectionStoreFactory();
+    final storedUsername = store.load()?.account?.username;
+    final username = storedUsername?.isNotEmpty == true
+        ? storedUsername!
+        : (await fetchProfile()).username;
+    if (username.isEmpty) throw const ApiUnavailable();
+
     final json = await _apiClient.getJson(
-      '/user/events/public',
+      '/users/' + Uri.encodeComponent(username) + '/events/public',
       queryParameters: {'per_page': '$limit'},
     );
     if (json is! List) throw const ApiUnavailable();
