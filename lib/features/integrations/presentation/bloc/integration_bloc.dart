@@ -212,6 +212,28 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     return '${record!.providerId}:$username';
   }
 
+  /// Decode one snapshot independently so a single corrupt namespace cannot
+  /// hide other valid cached data. Invalid entries are removed best-effort.
+  Future<T?> _decodeCachedSnapshot<T>({
+    required LocalSnapshotStore cache,
+    required String accountId,
+    required String namespace,
+    required LocalSnapshot? snapshot,
+    required T Function() decode,
+  }) async {
+    if (snapshot == null) return null;
+    try {
+      return decode();
+    } catch (_) {
+      try {
+        await cache.remove(accountId: accountId, namespace: namespace);
+      } catch (_) {
+        // A failed cleanup must not prevent the remaining cache from loading.
+      }
+      return null;
+    }
+  }
+
   Future<void> _restoreCachedData(
     ProviderConnectionRecord record,
     Emitter<IntegrationState> emit,
@@ -240,24 +262,43 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
         namespace: 'contributions',
         schemaVersion: _snapshotSchemaVersion,
       );
-      final profile = profileSnapshot == null
-          ? null
-          : ProviderSnapshotCodec.decodeProfile(profileSnapshot.payload);
-      final repositories = repositoriesSnapshot == null
-          ? null
-          : ProviderSnapshotCodec.decodeRepositories(
-              repositoriesSnapshot.payload['items'],
-            );
-      final activities = activitySnapshot == null
-          ? null
-          : ProviderSnapshotCodec.decodeActivities(
-              activitySnapshot.payload['items'],
-            );
-      final contributions = contributionsSnapshot == null
-          ? null
-          : ProviderSnapshotCodec.decodeContributions(
-              contributionsSnapshot.payload,
-            );
+      final profile = await _decodeCachedSnapshot<DeveloperProfile>(
+        cache: cache,
+        accountId: accountId,
+        namespace: 'profile',
+        snapshot: profileSnapshot,
+        decode: () => ProviderSnapshotCodec.decodeProfile(
+          profileSnapshot!.payload,
+        ),
+      );
+      final repositories = await _decodeCachedSnapshot<List<Repository>>(
+        cache: cache,
+        accountId: accountId,
+        namespace: 'repositories',
+        snapshot: repositoriesSnapshot,
+        decode: () => ProviderSnapshotCodec.decodeRepositories(
+          repositoriesSnapshot!.payload['items'],
+        ),
+      );
+      final activities = await _decodeCachedSnapshot<List<DeveloperActivity>>(
+        cache: cache,
+        accountId: accountId,
+        namespace: 'activity',
+        snapshot: activitySnapshot,
+        decode: () => ProviderSnapshotCodec.decodeActivities(
+          activitySnapshot!.payload['items'],
+        ),
+      );
+      final contributions =
+          await _decodeCachedSnapshot<ContributionSummary>(
+            cache: cache,
+            accountId: accountId,
+            namespace: 'contributions',
+            snapshot: contributionsSnapshot,
+            decode: () => ProviderSnapshotCodec.decodeContributions(
+              contributionsSnapshot!.payload,
+            ),
+          );
       if (profile != null ||
           repositories != null ||
           activities != null ||
