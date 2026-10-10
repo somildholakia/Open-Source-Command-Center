@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/responsive_layout.dart';
+import '../../../../core/widgets/cartoon_page_banner.dart';
 import '../../../../core/widgets/sample_data_banner.dart';
 import '../../../../core/widgets/status_message_card.dart';
 import '../../../integrations/presentation/bloc/integration_bloc.dart';
@@ -53,6 +54,14 @@ class _ActivityPageState extends State<ActivityPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const CartoonPageBanner(
+                      eyebrow: 'Your journey',
+                      title: 'Every commit tells a story',
+                      subtitle: 'Pick up where your open-source adventure left off.',
+                      icon: Icons.rocket_launch_rounded,
+                      accent: Color(0xFF008F86),
+                    ),
+                    AppSpacing.vSpaceLg,
                     ActivityHeader(
                       selected: _filter,
                       onChanged: (filter) => setState(() => _filter = filter),
