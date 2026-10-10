@@ -364,6 +364,7 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
           connection: rebuilt,
         ),
       );
+      await _restoreCachedData(rebuilt, emit);
       add(const IntegrationDataRefreshRequested());
     } on AuthorizationExpired {
       // Token rejected: silently disconnect (clears stored state).
