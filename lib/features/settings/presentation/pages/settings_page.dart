@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/responsive_layout.dart';
+import '../../../../core/widgets/cartoon_page_banner.dart';
 import '../../../auth/presentation/bloc/auth.dart';
 import '../../../progress/presentation/bloc/intelligence_bloc.dart';
 import '../widgets/settings_section_card.dart';
@@ -52,6 +53,14 @@ class SettingsPage extends StatelessWidget {
                 child: ResponsiveContainer(
                   child: Column(
                     children: [
+                      AppSpacing.vSpaceMd,
+                      const CartoonPageBanner(
+                        eyebrow: 'Make it yours',
+                        title: 'Your space, your rules',
+                        subtitle: 'Tune the app to fit the way you build.',
+                        icon: Icons.palette_rounded,
+                        accent: Color(0xFF7C4DFF),
+                      ),
                       AppSpacing.vSpaceMd,
                       // Appearance — functional: theme selection + persistence
                       const SettingsSectionCard(
