@@ -68,7 +68,7 @@ class DashboardActivitySummary extends StatelessWidget {
                   AppSpacing.hSpaceSm,
                   Expanded(
                     child: Text(
-                      'LAST 5 EVENTS',
+                      'YOUR ACTIVITY SNAPSHOT',
                       style: AppTypography.labelLarge.copyWith(
                         color: scheme.onSurface,
                         letterSpacing: 0.6,
