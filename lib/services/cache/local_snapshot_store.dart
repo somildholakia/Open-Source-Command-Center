@@ -69,6 +69,10 @@ class LocalSnapshotStore {
 
   static const String _prefix = 'local_snapshot_v1:';
 
+  /// Keep preferences suitable for small snapshots; larger histories belong in
+  /// a SQLite-backed implementation behind this API.
+  static const int maxSnapshotBytes = 512 * 1024;
+
   Future<LocalSnapshot?> read({
     required String accountId,
     required String namespace,
@@ -100,10 +104,15 @@ class LocalSnapshotStore {
       cachedAt: cachedAt ?? DateTime.now(),
       schemaVersion: schemaVersion,
     );
-    await _preferences.setString(
-      _key(accountId, namespace),
-      jsonEncode(snapshot.toJson()),
-    );
+    final encoded = jsonEncode(snapshot.toJson());
+    if (utf8.encode(encoded).length > maxSnapshotBytes) {
+      throw ArgumentError.value(
+        payload,
+        'payload',
+        'Snapshot exceeds the 512 KiB local preference cache limit.',
+      );
+    }
+    await _preferences.setString(_key(accountId, namespace), encoded);
   }
 
   Future<void> remove({
