@@ -209,7 +209,7 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
   String? _accountCacheId(ProviderConnectionRecord? record) {
     final username = record?.account?.username;
     if (username == null || username.isEmpty) return null;
-    return record!.providerId + ':' + username;
+    return '${record!.providerId}:$username';
   }
 
   Future<void> _restoreCachedData(
