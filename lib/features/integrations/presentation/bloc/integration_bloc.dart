@@ -572,6 +572,16 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     IntegrationResetRequested event,
     Emitter<IntegrationState> emit,
   ) async {
+    // Signing out must not leave the previous account's cached provider data
+    // on a shared device. Clear only the active account's snapshots.
+    final accountId = _accountCacheId(state.connection);
+    if (accountId != null) {
+      try {
+        await (await _snapshotStoreFactory()).clearAccount(accountId);
+      } catch (_) {
+        // A local-storage failure must not prevent sign-out.
+      }
+    }
     try {
       await provider.disconnect();
     } catch (_) {}
