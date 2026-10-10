@@ -587,6 +587,7 @@ void main() {
             ),
           );
           expect(maximumConcurrentRequests, 4);
+          if (!releaseRequests.isCompleted) releaseRequests.complete();
           await waitFor(bloc, (state) => !state.isBusy);
           expect(bloc.state.profile, isNotNull);
           expect(bloc.state.repositories, hasLength(1));
