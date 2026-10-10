@@ -6,6 +6,7 @@ import '../../../../core/navigation/app_router.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/responsive_layout.dart';
+import '../../../../core/widgets/cartoon_page_banner.dart';
 import '../../../auth/presentation/bloc/auth.dart';
 import '../../../integrations/presentation/widgets/github_connection_card.dart';
 import '../widgets/profile_empty_state.dart';
@@ -50,6 +51,14 @@ class ProfilePage extends StatelessWidget {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
+                      AppSpacing.vSpaceMd,
+                      const CartoonPageBanner(
+                        eyebrow: 'Your developer story',
+                        title: 'This is your space',
+                        subtitle: 'Your identity, connections and achievements.',
+                        icon: Icons.face_retouching_natural_rounded,
+                        accent: Color(0xFF008F86),
+                      ),
                       AppSpacing.vSpaceMd,
                       ProfileHeader(
                         photoUrl: user.photoUrl,
