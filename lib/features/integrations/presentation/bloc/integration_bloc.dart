@@ -502,7 +502,8 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     // Authorization is dead: surface expired + keep record for username.
     if (profile is AuthorizationExpired ||
         repositories is AuthorizationExpired ||
-        activities is AuthorizationExpired) {
+        activities is AuthorizationExpired ||
+        contributions is AuthorizationExpired) {
       await provider.disconnect();
       emit(
         IntegrationState(
@@ -547,7 +548,9 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
       state.copyWith(
         phase: IntegrationPhase.connected,
         connection: updatedRecord,
-        profile: profile is DeveloperProfile ? profile : null,
+        // Preserve the last-known profile if this refresh failed. A partial
+        // network failure must not erase useful offline data.
+        profile: profile is DeveloperProfile ? profile : state.profile,
         repositories: repositories is List<Repository>
             ? repositories
             : state.repositories,
