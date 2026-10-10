@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../domain/domain.dart';
+import '../../../../services/cache/local_snapshot_store.dart';
+import '../../../../services/cache/provider_snapshot_codec.dart';
 import '../../../../services/connection/connection_store.dart';
 
 /// Events driving the provider-connection lifecycle.
@@ -98,6 +100,9 @@ class IntegrationState extends Equatable {
   /// Last failure (connection or data). Cleared on successful refresh.
   final ProviderFailure? failure;
 
+  /// True when displayed provider data came from local cache or a refresh failed.
+  final bool isStale;
+
   const IntegrationState({
     this.phase = IntegrationPhase.unknown,
     this.prompt,
@@ -109,6 +114,7 @@ class IntegrationState extends Equatable {
     this.isLoadingData = false,
     this.isRefreshing = false,
     this.failure,
+    this.isStale = false,
   });
 
   bool get isConnected => phase == IntegrationPhase.connected;
@@ -129,6 +135,7 @@ class IntegrationState extends Equatable {
     bool? isRefreshing,
     ProviderFailure? failure,
     bool clearFailure = false,
+    bool? isStale,
   }) {
     return IntegrationState(
       phase: phase ?? this.phase,
@@ -143,6 +150,7 @@ class IntegrationState extends Equatable {
       isLoadingData: isLoadingData ?? this.isLoadingData,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       failure: clearFailure ? null : (failure ?? this.failure),
+      isStale: isStale ?? this.isStale,
     );
   }
 
@@ -158,6 +166,7 @@ class IntegrationState extends Equatable {
     isLoadingData,
     isRefreshing,
     failure,
+    isStale,
   ];
 }
 
@@ -165,11 +174,15 @@ class IntegrationState extends Equatable {
 class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
   final DeveloperProvider provider;
   final Future<ConnectionStore> Function() _storeFactory;
+  final Future<LocalSnapshotStore> Function() _snapshotStoreFactory;
+  static const int _snapshotSchemaVersion = 1;
 
   IntegrationBloc({
     required this.provider,
     Future<ConnectionStore> Function()? storeFactory,
+    Future<LocalSnapshotStore> Function()? snapshotStoreFactory,
   }) : _storeFactory = storeFactory ?? _defaultStoreFactory,
+       _snapshotStoreFactory = snapshotStoreFactory ?? _defaultSnapshotStoreFactory,
        super(const IntegrationState()) {
     on<IntegrationStarted>(_onStarted);
     on<IntegrationConnectRequested>(_onConnectRequested);
@@ -185,6 +198,120 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
   static Future<ConnectionStore> _defaultStoreFactory() async {
     final prefs = await SharedPreferences.getInstance();
     return SharedPrefsConnectionStore(prefs);
+  }
+
+  static Future<LocalSnapshotStore> _defaultSnapshotStoreFactory() async {
+    final prefs = await SharedPreferences.getInstance();
+    return LocalSnapshotStore(prefs);
+  }
+
+  String? _accountCacheId(ProviderConnectionRecord? record) {
+    final username = record?.account?.username;
+    if (username == null || username.isEmpty) return null;
+    return record!.providerId + ':' + username;
+  }
+
+  Future<void> _restoreCachedData(
+    ProviderConnectionRecord record,
+    Emitter<IntegrationState> emit,
+  ) async {
+    final accountId = _accountCacheId(record);
+    if (accountId == null) return;
+    try {
+      final cache = await _snapshotStoreFactory();
+      final profileSnapshot = await cache.read(
+        accountId: accountId, namespace: 'profile',
+        schemaVersion: _snapshotSchemaVersion,
+      );
+      final repositoriesSnapshot = await cache.read(
+        accountId: accountId, namespace: 'repositories',
+        schemaVersion: _snapshotSchemaVersion,
+      );
+      final activitySnapshot = await cache.read(
+        accountId: accountId, namespace: 'activity',
+        schemaVersion: _snapshotSchemaVersion,
+      );
+      final contributionsSnapshot = await cache.read(
+        accountId: accountId, namespace: 'contributions',
+        schemaVersion: _snapshotSchemaVersion,
+      );
+      final profile = profileSnapshot == null
+          ? null
+          : ProviderSnapshotCodec.decodeProfile(profileSnapshot.payload);
+      final repositories = repositoriesSnapshot == null
+          ? null
+          : ProviderSnapshotCodec.decodeRepositories(
+              repositoriesSnapshot.payload['items'],
+            );
+      final activities = activitySnapshot == null
+          ? null
+          : ProviderSnapshotCodec.decodeActivities(
+              activitySnapshot.payload['items'],
+            );
+      final contributions = contributionsSnapshot == null
+          ? null
+          : ProviderSnapshotCodec.decodeContributions(
+              contributionsSnapshot.payload,
+            );
+      if (profile != null || repositories != null || activities != null ||
+          contributions != null) {
+        emit(IntegrationState(
+          phase: IntegrationPhase.connected,
+          connection: record,
+          profile: profile,
+          repositories: repositories ?? const [],
+          activities: activities ?? const [],
+          contributions: contributions,
+          isStale: true,
+        ));
+      }
+    } catch (_) {
+      // A corrupt/unavailable cache must never prevent a live refresh.
+    }
+  }
+
+  Future<void> _persistSuccessfulSnapshots(
+    IntegrationState previous, {
+    required Object? profile,
+    required Object? repositories,
+    required Object? activities,
+    required Object? contributions,
+  }) async {
+    final accountId = _accountCacheId(previous.connection);
+    if (accountId == null) return;
+    try {
+      final cache = await _snapshotStoreFactory();
+      if (profile is DeveloperProfile) {
+        await cache.write(
+          accountId: accountId, namespace: 'profile',
+          payload: ProviderSnapshotCodec.encodeProfile(profile),
+          schemaVersion: _snapshotSchemaVersion,
+        );
+      }
+      if (repositories is List<Repository>) {
+        await cache.write(
+          accountId: accountId, namespace: 'repositories',
+          payload: {'items': ProviderSnapshotCodec.encodeRepositories(repositories)},
+          schemaVersion: _snapshotSchemaVersion,
+        );
+      }
+      if (activities is List<DeveloperActivity>) {
+        await cache.write(
+          accountId: accountId, namespace: 'activity',
+          payload: {'items': ProviderSnapshotCodec.encodeActivities(activities)},
+          schemaVersion: _snapshotSchemaVersion,
+        );
+      }
+      if (contributions is ContributionSummary) {
+        await cache.write(
+          accountId: accountId, namespace: 'contributions',
+          payload: ProviderSnapshotCodec.encodeContributions(contributions),
+          schemaVersion: _snapshotSchemaVersion,
+        );
+      }
+    } catch (_) {
+      // Caching is best-effort; storage failure must not block live data.
+    }
   }
 
   // ---------------------------------------------------------------------------
