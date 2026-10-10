@@ -259,6 +259,59 @@ void main() {
       await bloc.close();
     });
 
+    test('corrupt activity snapshot does not hide valid cached profile', () async {
+      SharedPreferences.setMockInitialValues({});
+      final preferences = await SharedPreferences.getInstance();
+      final cache = LocalSnapshotStore(preferences);
+      await cache.write(
+        accountId: 'github:octocat',
+        namespace: 'profile',
+        payload: ProviderSnapshotCodec.encodeProfile(sampleProfile()),
+        schemaVersion: 1,
+      );
+      await cache.write(
+        accountId: 'github:octocat',
+        namespace: 'activity',
+        payload: {
+          'items': [
+            {
+              'id': 'corrupt-event',
+              'type': 'not-a-real-activity-type',
+              'timestamp': 'not-a-timestamp',
+            },
+          ],
+        },
+        schemaVersion: 1,
+      );
+      final provider = FakeDeveloperProvider(
+        connected: true,
+        dataFailure: const NetworkUnavailable(),
+      );
+      final bloc = IntegrationBloc(
+        provider: provider,
+        storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+        snapshotStoreFactory: () async => cache,
+      );
+
+      bloc.add(const IntegrationStarted());
+      await waitFor(
+        bloc,
+        (state) => state.isStale && !state.isBusy && state.failure != null,
+      );
+
+      expect(bloc.state.profile?.username, 'octocat');
+      expect(bloc.state.activities, isEmpty);
+      expect(
+        await cache.read(
+          accountId: 'github:octocat',
+          namespace: 'activity',
+          schemaVersion: 1,
+        ),
+        isNull,
+      );
+      await bloc.close();
+    });
+
     test('clears this account cache on explicit GitHub disconnect', () async {
       SharedPreferences.setMockInitialValues({});
       final preferences = await SharedPreferences.getInstance();
