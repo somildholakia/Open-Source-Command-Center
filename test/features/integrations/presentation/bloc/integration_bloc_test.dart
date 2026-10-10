@@ -543,7 +543,9 @@ void main() {
       },
     );
 
-    test('refreshes independent GitHub data sources concurrently', () async {
+    test(
+      'refreshes independent GitHub data sources concurrently',
+      () async {
       final provider = FakeDeveloperProvider(
         connected: true,
         profile: sampleProfile(),
@@ -593,8 +595,9 @@ void main() {
       expect(bloc.state.profile, isNotNull);
       expect(bloc.state.repositories, hasLength(1));
       expect(bloc.state.failure, isNull);
-      await bloc.close();
-    });
+        await bloc.close();
+      },
+    );
 
     test('does nothing while disconnected', () async {
       final provider = FakeDeveloperProvider();
