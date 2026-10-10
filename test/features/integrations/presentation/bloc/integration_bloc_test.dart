@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opensource_command_center/domain/domain.dart';
 import 'package:opensource_command_center/features/integrations/presentation/bloc/integration_bloc.dart';
+import 'package:opensource_command_center/services/cache/local_snapshot_store.dart';
+import 'package:opensource_command_center/services/cache/provider_snapshot_codec.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../support/fake_developer_provider.dart';
 import '../../../../support/in_memory_connection_store.dart';
@@ -134,6 +137,119 @@ void main() {
       );
 
       expect(provider.disconnectCalls, greaterThan(0));
+      await bloc.close();
+    });
+  });
+
+  group('local snapshots', () {
+    test('persists successful provider responses on device', () async {
+      SharedPreferences.setMockInitialValues({});
+      final preferences = await SharedPreferences.getInstance();
+      final cache = LocalSnapshotStore(preferences);
+      final provider = FakeDeveloperProvider(
+        connected: true,
+        profile: sampleProfile(),
+        repositories: [sampleRepository()],
+        activities: [sampleActivity()],
+        contributions: ContributionSummary(
+          dailyCounts: const {'2026-10-01': 4},
+          fetchedAt: DateTime(2026, 10, 1),
+        ),
+      );
+      final bloc = IntegrationBloc(
+        provider: provider,
+        storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+        snapshotStoreFactory: () async => cache,
+      );
+
+      bloc.add(const IntegrationStarted());
+      await waitFor(bloc, (state) => !state.isBusy && state.profile != null);
+
+      expect(
+        await cache.read(
+          accountId: 'github:octocat',
+          namespace: 'profile',
+          schemaVersion: 1,
+        ),
+        isNotNull,
+      );
+      expect(
+        await cache.read(
+          accountId: 'github:octocat',
+          namespace: 'repositories',
+          schemaVersion: 1,
+        ),
+        isNotNull,
+      );
+      expect(
+        await cache.read(
+          accountId: 'github:octocat',
+          namespace: 'activity',
+          schemaVersion: 1,
+        ),
+        isNotNull,
+      );
+      expect(
+        await cache.read(
+          accountId: 'github:octocat',
+          namespace: 'contributions',
+          schemaVersion: 1,
+        ),
+        isNotNull,
+      );
+      await bloc.close();
+    });
+
+    test('restores cached data and keeps it when refresh is offline', () async {
+      SharedPreferences.setMockInitialValues({});
+      final preferences = await SharedPreferences.getInstance();
+      final cache = LocalSnapshotStore(preferences);
+      await cache.write(
+        accountId: 'github:octocat',
+        namespace: 'profile',
+        payload: ProviderSnapshotCodec.encodeProfile(sampleProfile()),
+        schemaVersion: 1,
+      );
+      await cache.write(
+        accountId: 'github:octocat',
+        namespace: 'repositories',
+        payload: {'items': ProviderSnapshotCodec.encodeRepositories([sampleRepository()])},
+        schemaVersion: 1,
+      );
+      await cache.write(
+        accountId: 'github:octocat',
+        namespace: 'activity',
+        payload: {'items': ProviderSnapshotCodec.encodeActivities([sampleActivity()])},
+        schemaVersion: 1,
+      );
+      await cache.write(
+        accountId: 'github:octocat',
+        namespace: 'contributions',
+        payload: ProviderSnapshotCodec.encodeContributions(
+          ContributionSummary(dailyCounts: const {'2026-10-01': 4}),
+        ),
+        schemaVersion: 1,
+      );
+      final provider = FakeDeveloperProvider(
+        connected: true,
+        dataFailure: const NetworkUnavailable(),
+      );
+      final bloc = IntegrationBloc(
+        provider: provider,
+        storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+        snapshotStoreFactory: () async => cache,
+      );
+
+      bloc.add(const IntegrationStarted());
+      await waitFor(
+        bloc,
+        (state) => state.isStale && !state.isBusy && state.failure != null,
+      );
+
+      expect(bloc.state.profile?.username, 'octocat');
+      expect(bloc.state.repositories, hasLength(1));
+      expect(bloc.state.activities, hasLength(1));
+      expect(bloc.state.contributions?.total, 4);
       await bloc.close();
     });
   });
