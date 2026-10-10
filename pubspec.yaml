@@ -35,6 +35,31 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # State Management
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.5
+
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+  firebase_analytics: ^11.3.3
+  firebase_crashlytics: ^4.1.3
+
+  # Navigation
+  go_router: ^14.6.1
+
+  # UI/Design
+  google_fonts: ^6.2.1
+
+  # Utilities
+  shared_preferences: ^2.3.2
+
+  # GitHub integration (Phase 2)
+  http: ^1.2.2                    # GitHub REST + GraphQL API calls (first-party Dart package)
+  flutter_secure_storage: ^9.2.2  # OAuth token storage in Android Keystore (never plaintext)
+  url_launcher: ^6.3.0            # Open GitHub device-flow verification URL in system browser
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -45,6 +70,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+
+  # Mocking library used to stub [AuthService] in unit/widget tests.
+  mocktail: ^1.0.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

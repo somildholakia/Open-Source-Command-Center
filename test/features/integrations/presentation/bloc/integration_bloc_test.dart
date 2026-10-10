@@ -1,0 +1,409 @@
+import 'dart:async';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:opensource_command_center/domain/domain.dart';
+import 'package:opensource_command_center/features/integrations/presentation/bloc/integration_bloc.dart';
+
+import '../../../../support/fake_developer_provider.dart';
+import '../../../../support/in_memory_connection_store.dart';
+
+void main() {
+  ProviderConnectionRecord connectedRecord({String username = 'octocat'}) {
+    return ProviderConnectionRecord.connected(
+      providerId: 'github',
+      account: ConnectedAccount(
+        providerId: 'github',
+        username: username,
+        avatarUrl: '',
+        profileUrl: '',
+      ),
+    );
+  }
+
+  /// Waits until the bloc is idle (no loading/refreshing) and the given
+  /// condition holds, pumping microtasks between checks.
+  Future<void> waitFor(
+    IntegrationBloc bloc,
+    bool Function(IntegrationState state) condition,
+  ) async {
+    for (var i = 0; i < 50; i++) {
+      if (condition(bloc.state)) return;
+      await Future<void>.delayed(Duration.zero);
+    }
+    fail('Timed out waiting for bloc state. Last state: ${bloc.state.phase}');
+  }
+
+  group('restore (IntegrationStarted)', () {
+    test('emits disconnected when no token is stored', () async {
+      final bloc = IntegrationBloc(
+        provider: FakeDeveloperProvider(),
+        storeFactory: () async => InMemoryConnectionStore(),
+      );
+
+      bloc.add(const IntegrationStarted());
+      await waitFor(
+        bloc,
+        (state) => state.phase == IntegrationPhase.disconnected,
+      );
+
+      expect(bloc.state.isConnected, isFalse);
+      await bloc.close();
+    });
+
+    test(
+      'restores a stored connection and refreshes normalized data',
+      () async {
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          profile: sampleProfile(),
+          repositories: [sampleRepository()],
+          activities: [sampleActivity()],
+          contributions: ContributionSummary(
+            dailyCounts: const {'2026-10-01': 4},
+            fetchedAt: DateTime(2026, 10, 1),
+          ),
+        );
+        final store = InMemoryConnectionStore(connectedRecord());
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => store,
+        );
+
+        bloc.add(const IntegrationStarted());
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.connected,
+        );
+        await waitFor(bloc, (state) => !state.isBusy && state.profile != null);
+
+        expect(bloc.state.connection?.account?.username, 'octocat');
+        expect(bloc.state.profile?.username, 'octocat');
+        expect(bloc.state.repositories, hasLength(1));
+        expect(bloc.state.activities, hasLength(1));
+        expect(bloc.state.contributions?.total, 4);
+        // A successful refresh records the sync timestamp.
+        expect(store.record?.lastSyncedAt, isNotNull);
+        await bloc.close();
+      },
+    );
+
+    test(
+      'rebuilds the record from the profile when only a token exists',
+      () async {
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          profile: sampleProfile(username: 'mona'),
+        );
+        final store = InMemoryConnectionStore();
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => store,
+        );
+
+        bloc.add(const IntegrationStarted());
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.connected,
+        );
+
+        expect(bloc.state.connection?.account?.username, 'mona');
+        // Saved at least once (the rebuild; the follow-up refresh may save the
+        // updated sync timestamp too).
+        expect(store.saveCalls, greaterThanOrEqualTo(1));
+        await bloc.close();
+      },
+    );
+
+    test('disconnects silently when the stored token was rejected', () async {
+      final provider = FakeDeveloperProvider(
+        connected: true,
+        profile: sampleProfile(),
+        dataFailure: const AuthorizationExpired(),
+      );
+      final bloc = IntegrationBloc(
+        provider: provider,
+        storeFactory: () async => InMemoryConnectionStore(),
+      );
+
+      bloc.add(const IntegrationStarted());
+      // Restoring a rejected token is not an error the user caused: the app
+      // simply returns to the disconnected state.
+      await waitFor(
+        bloc,
+        (state) => state.phase == IntegrationPhase.disconnected,
+      );
+
+      expect(provider.disconnectCalls, greaterThan(0));
+      await bloc.close();
+    });
+  });
+
+  group('connect', () {
+    test(
+      'emits connecting with the device-flow prompt, then connected',
+      () async {
+        final gate = Completer<void>();
+        final provider = FakeDeveloperProvider()..onConnect = () => gate.future;
+        final store = InMemoryConnectionStore();
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => store,
+        );
+
+        bloc.add(const IntegrationConnectRequested());
+
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.connecting,
+        );
+        expect(bloc.state.prompt?.userCode, 'ABCD-1234');
+        expect(store.record, isNull);
+
+        gate.complete();
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.connected,
+        );
+        expect(provider.connectCalls, 1);
+        // Connection is persisted (never the token — that lives in the token
+        // store inside the provider).
+        expect(store.record?.providerId, 'github');
+        expect(store.record?.account?.username, 'octocat');
+        await bloc.close();
+      },
+    );
+
+    test(
+      'cancellation returns to disconnected without an error card',
+      () async {
+        final gate = Completer<void>();
+        final provider = FakeDeveloperProvider()..onConnect = () => gate.future;
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => InMemoryConnectionStore(),
+        );
+
+        bloc.add(const IntegrationConnectRequested());
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.connecting,
+        );
+
+        provider.connectFailure = const AuthenticationFailed(
+          detail: 'Authorization cancelled.',
+        );
+        gate.complete();
+
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.disconnected,
+        );
+        expect(bloc.state.failure, isNull);
+        await bloc.close();
+      },
+    );
+
+    test('maps authorization failures to the error phase', () async {
+      final provider = FakeDeveloperProvider(
+        connectFailure: const AuthenticationFailed(detail: 'Denied'),
+      );
+      final bloc = IntegrationBloc(
+        provider: provider,
+        storeFactory: () async => InMemoryConnectionStore(),
+      );
+
+      bloc.add(const IntegrationConnectRequested());
+      await waitFor(bloc, (state) => state.phase == IntegrationPhase.error);
+
+      expect(bloc.state.failure, isA<AuthenticationFailed>());
+      await bloc.close();
+    });
+
+    test('cancelAuthorization is forwarded to the provider', () async {
+      final provider = FakeDeveloperProvider();
+      final bloc = IntegrationBloc(
+        provider: provider,
+        storeFactory: () async => InMemoryConnectionStore(),
+      );
+
+      bloc.add(const IntegrationCancelConnectRequested());
+      await Future<void>.delayed(Duration.zero);
+
+      expect(provider.cancelAuthorizationCalls, 1);
+      await bloc.close();
+    });
+  });
+
+  group('refresh', () {
+    test(
+      'deduplicates overlapping refreshes (no duplicate API calls)',
+      () async {
+        final gate = Completer<void>();
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          profile: sampleProfile(),
+        );
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+        );
+
+        bloc.add(const IntegrationStarted());
+        await waitFor(bloc, (state) => !state.isBusy && state.profile != null);
+        final callsAfterRestore = provider.fetchProfileCalls;
+
+        provider.onFetch = () => gate.future;
+        bloc.add(const IntegrationDataRefreshRequested());
+        await waitFor(bloc, (state) => state.isBusy);
+
+        // Second request while busy must be ignored.
+        bloc.add(const IntegrationDataRefreshRequested());
+        await Future<void>.delayed(Duration.zero);
+        expect(provider.fetchProfileCalls, callsAfterRestore + 1);
+
+        gate.complete();
+        await waitFor(bloc, (state) => !state.isBusy);
+        expect(provider.fetchProfileCalls, callsAfterRestore + 1);
+        await bloc.close();
+      },
+    );
+
+    test(
+      'keeps cached data and surfaces the failure when a refresh fails',
+      () async {
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          profile: sampleProfile(),
+          repositories: [sampleRepository()],
+        );
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+        );
+
+        bloc.add(const IntegrationStarted());
+        await waitFor(bloc, (state) => !state.isBusy && state.profile != null);
+        expect(bloc.state.repositories, hasLength(1));
+
+        provider.dataFailure = const NetworkUnavailable();
+        bloc.add(const IntegrationDataRefreshRequested());
+        await waitFor(bloc, (state) => state.failure != null);
+        await waitFor(bloc, (state) => !state.isBusy);
+
+        expect(bloc.state.phase, IntegrationPhase.connected);
+        expect(bloc.state.failure, isA<NetworkUnavailable>());
+        expect(bloc.state.repositories, hasLength(1));
+        await bloc.close();
+      },
+    );
+
+    test(
+      'expires the connection when the provider rejects the token',
+      () async {
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          profile: sampleProfile(),
+        );
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+        );
+
+        bloc.add(const IntegrationStarted());
+        await waitFor(bloc, (state) => !state.isBusy && state.profile != null);
+
+        provider.dataFailure = const AuthorizationExpired();
+        bloc.add(const IntegrationDataRefreshRequested());
+        await waitFor(bloc, (state) => state.phase == IntegrationPhase.expired);
+
+        // The record is kept so the UI can still name the account, while the
+        // provider token has been cleared.
+        expect(bloc.state.connection?.account?.username, 'octocat');
+        expect(provider.disconnectCalls, greaterThan(0));
+        await bloc.close();
+      },
+    );
+
+    test('does nothing while disconnected', () async {
+      final provider = FakeDeveloperProvider();
+      final bloc = IntegrationBloc(
+        provider: provider,
+        storeFactory: () async => InMemoryConnectionStore(),
+      );
+
+      bloc.add(const IntegrationStarted());
+      await waitFor(
+        bloc,
+        (state) => state.phase == IntegrationPhase.disconnected,
+      );
+
+      bloc.add(const IntegrationDataRefreshRequested());
+      await Future<void>.delayed(Duration.zero);
+
+      expect(provider.fetchProfileCalls, 0);
+      await bloc.close();
+    });
+  });
+
+  group('disconnect and reset', () {
+    test(
+      'disconnect clears the provider and returns to disconnected',
+      () async {
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          profile: sampleProfile(),
+        );
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+        );
+
+        bloc.add(const IntegrationStarted());
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.connected,
+        );
+
+        bloc.add(const IntegrationDisconnectRequested());
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.disconnected,
+        );
+
+        expect(provider.disconnectCalls, 1);
+        expect(bloc.state.connection, isNull);
+        await bloc.close();
+      },
+    );
+
+    test(
+      'reset (sign-out) drops in-memory state through the provider',
+      () async {
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          profile: sampleProfile(),
+        );
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+        );
+
+        bloc.add(const IntegrationStarted());
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.connected,
+        );
+
+        bloc.add(const IntegrationResetRequested());
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.disconnected,
+        );
+
+        expect(provider.disconnectCalls, 1);
+        expect(bloc.state.profile, isNull);
+        await bloc.close();
+      },
+    );
+  });
+}

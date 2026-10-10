@@ -1,0 +1,198 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../services/firebase/auth_service.dart';
+import 'auth_event.dart';
+import 'auth_state.dart';
+
+/// BLoC for managing authentication state.
+///
+/// Handles authentication events and emits appropriate states.
+/// Backed by [AuthService] for real Firebase Authentication.
+class AuthBloc extends Bloc<AuthEvent, AuthState> {
+  final AuthService _authService;
+
+  AuthBloc({AuthService? authService})
+    : _authService = authService ?? AuthService.instance,
+      super(const AuthInitial()) {
+    on<AuthCheckRequested>(_onAuthCheckRequested);
+    on<AuthSignInRequested>(_onAuthSignInRequested);
+    on<AuthSignUpRequested>(_onAuthSignUpRequested);
+    on<AuthSignOutRequested>(_onAuthSignOutRequested);
+    on<AuthPasswordResetRequested>(_onAuthPasswordResetRequested);
+  }
+
+  /// Check for existing authenticated session via [AuthService.currentUser].
+  ///
+  /// Firebase Auth natively persists the signed-in user across app launches.
+  Future<void> _onAuthCheckRequested(
+    AuthCheckRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
+
+    final user = _authService.currentUser;
+    if (user != null && user.isAuthenticated) {
+      emit(AuthAuthenticated(user: user));
+    } else {
+      emit(const AuthUnauthenticated());
+    }
+  }
+
+  /// Handle sign in request with email/password.
+  Future<void> _onAuthSignInRequested(
+    AuthSignInRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    // 1. Client-side validations
+    if (event.email.isEmpty || event.password.isEmpty) {
+      emit(
+        const AuthError(
+          message: 'Please enter both email and password',
+          type: AuthErrorType.invalidEmail,
+        ),
+      );
+      return;
+    }
+
+    if (!_isValidEmail(event.email)) {
+      emit(
+        const AuthError(
+          message: 'Please enter a valid email address',
+          type: AuthErrorType.invalidEmail,
+        ),
+      );
+      return;
+    }
+
+    if (event.password.length < 6) {
+      emit(
+        const AuthError(
+          message: 'Password must be at least 6 characters',
+          type: AuthErrorType.weakPassword,
+        ),
+      );
+      return;
+    }
+
+    emit(const AuthLoading());
+
+    // 2. Real Firebase Auth call
+    try {
+      final user = await _authService.signInWithEmailAndPassword(
+        email: event.email.trim(),
+        password: event.password,
+      );
+      emit(AuthAuthenticated(user: user));
+    } on AuthFailure catch (f) {
+      emit(AuthError(message: f.message, type: f.type));
+    } catch (e) {
+      emit(
+        AuthError(message: 'Sign-in failed: $e', type: AuthErrorType.unknown),
+      );
+    }
+  }
+
+  /// Handle sign up request with email/password.
+  Future<void> _onAuthSignUpRequested(
+    AuthSignUpRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    // 1. Client-side validations
+    if (event.email.isEmpty || !_isValidEmail(event.email)) {
+      emit(
+        const AuthError(
+          message: 'Please enter a valid email address',
+          type: AuthErrorType.invalidEmail,
+        ),
+      );
+      return;
+    }
+
+    if (event.password.length < 8) {
+      emit(
+        const AuthError(
+          message: 'Password must be at least 8 characters',
+          type: AuthErrorType.weakPassword,
+        ),
+      );
+      return;
+    }
+
+    if (_isCommonPassword(event.password)) {
+      emit(
+        const AuthError(
+          message: 'Password is too common. Choose a stronger password.',
+          type: AuthErrorType.weakPassword,
+        ),
+      );
+      return;
+    }
+
+    emit(const AuthLoading());
+
+    // 2. Real Firebase Auth call
+    try {
+      final user = await _authService.signUpWithEmailAndPassword(
+        email: event.email.trim(),
+        password: event.password,
+        displayName: event.displayName?.trim(),
+      );
+      emit(AuthAuthenticated(user: user));
+    } on AuthFailure catch (f) {
+      emit(AuthError(message: f.message, type: f.type));
+    } catch (e) {
+      emit(
+        AuthError(message: 'Sign-up failed: $e', type: AuthErrorType.unknown),
+      );
+    }
+  }
+
+  /// Handle sign out request.
+  Future<void> _onAuthSignOutRequested(
+    AuthSignOutRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
+    await _authService.signOut();
+    emit(const AuthUnauthenticated());
+  }
+
+  /// Handle password reset request.
+  Future<void> _onAuthPasswordResetRequested(
+    AuthPasswordResetRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    if (event.email.isEmpty || !_isValidEmail(event.email)) {
+      emit(
+        const AuthError(
+          message: 'Please enter a valid email address',
+          type: AuthErrorType.invalidEmail,
+        ),
+      );
+      return;
+    }
+
+    await _authService.sendPasswordResetEmail(event.email.trim());
+    // Note: Password reset sends an email; the state stays unauthenticated
+    // (the UI shows a snackbar confirmation).
+  }
+
+  /// Simple email validation.
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email.trim());
+  }
+
+  /// Check for common weak passwords.
+  bool _isCommonPassword(String password) {
+    const commonPasswords = [
+      'password',
+      '12345678',
+      'qwerty',
+      'abc123',
+      'password123',
+      'letmein',
+      'welcome',
+    ];
+    return commonPasswords.contains(password.toLowerCase());
+  }
+}
