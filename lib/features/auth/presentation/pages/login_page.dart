@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/cartoon_page_banner.dart';
 import '../../../../core/widgets/responsive_layout.dart';
 import '../bloc/auth.dart';
 
@@ -158,33 +159,12 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildHeader() {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.3),
-              width: 1,
-            ),
-          ),
-          child: Icon(
-            Icons.terminal_rounded,
-            color: AppColors.primaryAccent,
-            size: 40,
-          ),
-        ),
-        AppSpacing.vSpaceLg,
-        Text('Login to Terminal', style: AppTypography.headingLarge),
-        AppSpacing.vSpaceSm,
-        Text(
-          'Connect to continue your journey',
-          style: AppTypography.bodyMedium,
-          textAlign: TextAlign.center,
-        ),
-      ],
+    return const CartoonPageBanner(
+      eyebrow: 'Welcome back, adventurer',
+      title: 'Login to Terminal',
+      subtitle: 'Connect to continue your journey',
+      icon: Icons.terminal_rounded,
+      accent: AppColors.primaryAccent,
     );
   }
 
