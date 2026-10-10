@@ -104,6 +104,18 @@ void main() {
       expect(old.payload['count'], 1);
     });
 
+    test('rejects oversized snapshots instead of growing preferences forever', () async {
+      await expectLater(
+        store.write(
+          accountId: 'github:alice',
+          namespace: 'activity',
+          payload: {'large': 'x' * (LocalSnapshotStore.maxSnapshotBytes + 1)},
+          schemaVersion: 1,
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test('clears only the requested account', () async {
       await store.write(
         accountId: 'github:alice',
