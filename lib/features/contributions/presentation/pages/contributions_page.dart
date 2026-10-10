@@ -54,10 +54,21 @@ class ContributionsPage extends StatelessWidget {
                     AppSpacing.vSpaceLg,
                     ContributionsHeader(isSample: !state.isConnected),
                     AppSpacing.vSpaceLg,
-                    if (state.isStale) ...[
+                    if (state.isStale && state.failure != null) ...[
                       StatusMessageCard(
                         icon: Icons.cloud_off_rounded,
-                        message: 'Showing saved contribution data. Refresh to check for updates.',
+                        message: '${failureMessage(state.failure!)} Showing saved data where available.',
+                        isError: true,
+                        actionLabel: 'Retry',
+                        onAction: () => context.read<IntegrationBloc>().add(
+                          const IntegrationDataRefreshRequested(),
+                        ),
+                      ),
+                      AppSpacing.vSpaceMd,
+                    ] else if (state.isStale) ...[
+                      StatusMessageCard(
+                        icon: Icons.cloud_off_rounded,
+                        message: 'Showing saved data. Refresh to check for updates.',
                         actionLabel: 'Refresh',
                         onAction: () => context.read<IntegrationBloc>().add(
                           const IntegrationDataRefreshRequested(),
