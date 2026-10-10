@@ -158,5 +158,5 @@ class ProviderSnapshotCodec {
   static int? _intOrNull(dynamic value) => value is int ? value : null;
 
   static DateTime? _dateOrNull(dynamic value) =>
-      value is String ? DateTime.tryParse(value)?.toLocal() : null;
+      value is String ? DateTime.tryParse(value)?.toUtc() : null;
 }
