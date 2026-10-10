@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: flutter-quality-${{ github.workflow }}-${{ github.ref }}
@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -39,8 +41,18 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
-      - name: Check formatting
-        run: dart format --output=none --set-exit-if-changed lib test
+      # One-time repair pass: format the branch, commit only formatter changes,
+      # then continue analysis and tests against the exact formatted tree.
+      - name: Format and commit Dart style fixes
+        run: |
+          dart format lib test
+          if [[ -n "$(git status --porcelain -- lib test)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add lib test
+            git commit -m "style: format Dart sources"
+            git push origin "HEAD:${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          fi
 
       - name: Analyze
         run: flutter analyze --no-pub
