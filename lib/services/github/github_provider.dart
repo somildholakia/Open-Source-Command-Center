@@ -191,7 +191,7 @@ class GitHubProvider implements DeveloperProvider {
     if (username.isEmpty) throw const ApiUnavailable();
 
     final json = await _apiClient.getJson(
-      '/users/' + Uri.encodeComponent(username) + '/events/public',
+      '/users/${Uri.encodeComponent(username)}/events/public',
       queryParameters: {'per_page': '$limit'},
     );
     if (json is! List) throw const ApiUnavailable();
