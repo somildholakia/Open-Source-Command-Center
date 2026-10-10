@@ -105,7 +105,7 @@ void main() {
           200,
         );
       }
-      if (path == '/user/events/public') {
+      if (path == '/users/octocat/events/public') {
         return http.Response(
           jsonEncode([
             {
@@ -282,14 +282,14 @@ void main() {
       },
     );
 
-    test('fetchActivity maps /user/events/public with the limit', () async {
+    test('fetchActivity maps /users/{username}/events/public with the limit', () async {
       final activity = await provider.fetchActivity(limit: 10);
 
       expect(activity, hasLength(1));
       expect(activity.single.type, DeveloperActivityType.commitPushed);
       expect(activity.single.commitCount, 2);
       final request = requests.lastWhere(
-        (r) => r.url.path == '/user/events/public',
+        (r) => r.url.path == '/users/octocat/events/public',
       );
       expect(request.url.queryParameters['per_page'], '10');
     });
