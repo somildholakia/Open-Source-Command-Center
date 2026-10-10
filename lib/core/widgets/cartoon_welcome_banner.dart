@@ -48,7 +48,8 @@ class CartoonWelcomeBanner extends StatelessWidget {
                 ? CrossAxisAlignment.start
                 : CrossAxisAlignment.center,
             children: [
-              Expanded(
+              Flexible(
+                fit: compact ? FlexFit.loose : FlexFit.tight,
                 flex: compact ? 0 : 1,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
