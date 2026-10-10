@@ -588,7 +588,10 @@ void main() {
         bloc.add(const IntegrationStarted());
         await waitFor(
           bloc,
-          (state) => !state.isBusy && state.profile != null,
+          (state) =>
+              !state.isBusy &&
+              state.profile != null &&
+              provider.fetchProfileCalls > 0,
         );
 
         bloc.add(const IntegrationResetRequested());
