@@ -54,7 +54,7 @@ class ContributionsPage extends StatelessWidget {
                     AppSpacing.vSpaceLg,
                     ContributionsHeader(isSample: !state.isConnected),
                     AppSpacing.vSpaceLg,
-                    if (state.isStale && state.failure != null) ...[
+                    if (state.isStale && state.failure != null && state.contributions != null) ...[
                       StatusMessageCard(
                         icon: Icons.cloud_off_rounded,
                         message: '${failureMessage(state.failure!)} Showing saved data where available.',
