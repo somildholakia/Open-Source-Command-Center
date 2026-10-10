@@ -83,9 +83,9 @@ class ProviderSnapshotCodec {
 
   static DeveloperActivity decodeActivity(Map<String, dynamic> json) {
     final typeName = _string(json['type']);
-    final type = DeveloperActivityType.values
-        .where((value) => value.name == typeName)
-        .firstOrNull;
+    final typeIndex =
+        DeveloperActivityType.values.indexWhere((value) => value.name == typeName);
+    final type = typeIndex < 0 ? null : DeveloperActivityType.values[typeIndex];
     final timestamp = _dateOrNull(json['timestamp']);
     if (type == null || timestamp == null) {
       throw const FormatException('Invalid cached developer activity.');
