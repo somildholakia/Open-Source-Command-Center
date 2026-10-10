@@ -96,6 +96,13 @@ class DashboardActivitySummary extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (state.repositories.isNotEmpty)
+                        TextButton(
+                          onPressed: () => context.read<IntegrationBloc>().add(
+                            const IntegrationDataRefreshRequested(),
+                          ),
+                          child: const Text('Retry'),
+                        ),
                     ],
                   ),
                 ),
