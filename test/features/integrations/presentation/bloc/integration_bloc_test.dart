@@ -546,55 +546,55 @@ void main() {
     test(
       'refreshes independent GitHub data sources concurrently',
       () async {
-      final provider = FakeDeveloperProvider(
-        connected: true,
-        profile: sampleProfile(),
-        repositories: [sampleRepository()],
-      );
-      final bloc = IntegrationBloc(
-        provider: provider,
-        storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
-      );
-
-      bloc.add(const IntegrationStarted());
-      await waitFor(
-        bloc,
-        (state) => !state.isBusy && state.profile != null,
-      );
-
-      var activeRequests = 0;
-      var maximumConcurrentRequests = 0;
-      final allRequestsStarted = Completer<void>();
-      final releaseRequests = Completer<void>();
-      provider.onFetch = () async {
-        activeRequests++;
-        if (activeRequests > maximumConcurrentRequests) {
-          maximumConcurrentRequests = activeRequests;
-        }
-        if (activeRequests == 4 && !allRequestsStarted.isCompleted) {
-          allRequestsStarted.complete();
-        }
-        await releaseRequests.future;
-        activeRequests--;
-      };
-
-      bloc.add(const IntegrationDataRefreshRequested());
-      try {
-        await allRequestsStarted.future.timeout(
-          const Duration(seconds: 2),
-          onTimeout: () => throw TestFailure(
-            'Expected all four provider requests to start concurrently.',
-          ),
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          profile: sampleProfile(),
+          repositories: [sampleRepository()],
         );
-        expect(maximumConcurrentRequests, 4);
-      } finally {
-        if (!releaseRequests.isCompleted) releaseRequests.complete();
-      }
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+        );
 
-      await waitFor(bloc, (state) => !state.isBusy);
-      expect(bloc.state.profile, isNotNull);
-      expect(bloc.state.repositories, hasLength(1));
-      expect(bloc.state.failure, isNull);
+        bloc.add(const IntegrationStarted());
+        await waitFor(
+          bloc,
+          (state) => !state.isBusy && state.profile != null,
+        );
+
+        var activeRequests = 0;
+        var maximumConcurrentRequests = 0;
+        final allRequestsStarted = Completer<void>();
+        final releaseRequests = Completer<void>();
+        provider.onFetch = () async {
+          activeRequests++;
+          if (activeRequests > maximumConcurrentRequests) {
+            maximumConcurrentRequests = activeRequests;
+          }
+          if (activeRequests == 4 && !allRequestsStarted.isCompleted) {
+            allRequestsStarted.complete();
+          }
+          await releaseRequests.future;
+          activeRequests--;
+        };
+
+        bloc.add(const IntegrationDataRefreshRequested());
+        try {
+          await allRequestsStarted.future.timeout(
+            const Duration(seconds: 2),
+            onTimeout: () => throw TestFailure(
+              'Expected all four provider requests to start concurrently.',
+            ),
+          );
+          expect(maximumConcurrentRequests, 4);
+        } finally {
+          if (!releaseRequests.isCompleted) releaseRequests.complete();
+        }
+
+        await waitFor(bloc, (state) => !state.isBusy);
+        expect(bloc.state.profile, isNotNull);
+        expect(bloc.state.repositories, hasLength(1));
+        expect(bloc.state.failure, isNull);
         await bloc.close();
       },
     );
