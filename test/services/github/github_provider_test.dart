@@ -282,17 +282,20 @@ void main() {
       },
     );
 
-    test('fetchActivity maps /users/{username}/events/public with the limit', () async {
-      final activity = await provider.fetchActivity(limit: 10);
+    test(
+      'fetchActivity maps /users/{username}/events/public with the limit',
+      () async {
+        final activity = await provider.fetchActivity(limit: 10);
 
-      expect(activity, hasLength(1));
-      expect(activity.single.type, DeveloperActivityType.commitPushed);
-      expect(activity.single.commitCount, 2);
-      final request = requests.lastWhere(
-        (r) => r.url.path == '/users/octocat/events/public',
-      );
-      expect(request.url.queryParameters['per_page'], '10');
-    });
+        expect(activity, hasLength(1));
+        expect(activity.single.type, DeveloperActivityType.commitPushed);
+        expect(activity.single.commitCount, 2);
+        final request = requests.lastWhere(
+          (r) => r.url.path == '/users/octocat/events/public',
+        );
+        expect(request.url.queryParameters['per_page'], '10');
+      },
+    );
 
     test('fetchContributions maps the GraphQL contribution calendar', () async {
       final summary = await provider.fetchContributions();

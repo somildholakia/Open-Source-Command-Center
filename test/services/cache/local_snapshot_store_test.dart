@@ -21,8 +21,8 @@ void main() {
         namespace: 'repositories',
         payload: {
           'items': [
-            {'name': 'command-center', 'stars': 3}
-          ]
+            {'name': 'command-center', 'stars': 3},
+          ],
         },
         schemaVersion: 1,
         cachedAt: timestamp,
@@ -83,9 +83,9 @@ void main() {
         isNull,
       );
       expect(
-        (await SharedPreferences.getInstance())
-            .getKeys()
-            .where((key) => key.startsWith('local_snapshot_v1:')),
+        (await SharedPreferences.getInstance()).getKeys().where(
+          (key) => key.startsWith('local_snapshot_v1:'),
+        ),
         isEmpty,
       );
     });
@@ -104,17 +104,20 @@ void main() {
       expect(old.payload['count'], 1);
     });
 
-    test('rejects oversized snapshots instead of growing preferences forever', () async {
-      await expectLater(
-        store.write(
-          accountId: 'github:alice',
-          namespace: 'activity',
-          payload: {'large': 'x' * (LocalSnapshotStore.maxSnapshotBytes + 1)},
-          schemaVersion: 1,
-        ),
-        throwsArgumentError,
-      );
-    });
+    test(
+      'rejects oversized snapshots instead of growing preferences forever',
+      () async {
+        await expectLater(
+          store.write(
+            accountId: 'github:alice',
+            namespace: 'activity',
+            payload: {'large': 'x' * (LocalSnapshotStore.maxSnapshotBytes + 1)},
+            schemaVersion: 1,
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
 
     test('clears only the requested account', () async {
       await store.write(

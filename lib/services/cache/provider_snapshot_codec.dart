@@ -8,17 +8,17 @@ class ProviderSnapshotCodec {
   ProviderSnapshotCodec._();
 
   static Map<String, dynamic> encodeProfile(DeveloperProfile value) => {
-        'id': value.id,
-        'username': value.username,
-        'displayName': value.displayName,
-        'avatarUrl': value.avatarUrl,
-        'profileUrl': value.profileUrl,
-        'bio': value.bio,
-        'publicRepositoryCount': value.publicRepositoryCount,
-        'followersCount': value.followersCount,
-        'followingCount': value.followingCount,
-        'createdAt': value.createdAt?.toUtc().toIso8601String(),
-      };
+    'id': value.id,
+    'username': value.username,
+    'displayName': value.displayName,
+    'avatarUrl': value.avatarUrl,
+    'profileUrl': value.profileUrl,
+    'bio': value.bio,
+    'publicRepositoryCount': value.publicRepositoryCount,
+    'followersCount': value.followersCount,
+    'followingCount': value.followingCount,
+    'createdAt': value.createdAt?.toUtc().toIso8601String(),
+  };
 
   static DeveloperProfile decodeProfile(Map<String, dynamic> json) =>
       DeveloperProfile(
@@ -35,56 +35,56 @@ class ProviderSnapshotCodec {
       );
 
   static Map<String, dynamic> encodeRepository(Repository value) => {
-        'id': value.id,
-        'name': value.name,
-        'fullName': value.fullName,
-        'owner': value.owner,
-        'description': value.description,
-        'isPrivate': value.isPrivate,
-        'isFork': value.isFork,
-        'url': value.url,
-        'defaultBranch': value.defaultBranch,
-        'language': value.language,
-        'stars': value.stars,
-        'forks': value.forks,
-        'openIssues': value.openIssues,
-        'updatedAt': value.updatedAt?.toUtc().toIso8601String(),
-      };
+    'id': value.id,
+    'name': value.name,
+    'fullName': value.fullName,
+    'owner': value.owner,
+    'description': value.description,
+    'isPrivate': value.isPrivate,
+    'isFork': value.isFork,
+    'url': value.url,
+    'defaultBranch': value.defaultBranch,
+    'language': value.language,
+    'stars': value.stars,
+    'forks': value.forks,
+    'openIssues': value.openIssues,
+    'updatedAt': value.updatedAt?.toUtc().toIso8601String(),
+  };
 
-  static Repository decodeRepository(Map<String, dynamic> json) =>
-      Repository(
-        id: _string(json['id']),
-        name: _string(json['name']),
-        fullName: _string(json['fullName']),
-        owner: _string(json['owner']),
-        description: _string(json['description']),
-        isPrivate: json['isPrivate'] == true,
-        isFork: json['isFork'] == true,
-        url: _string(json['url']),
-        defaultBranch: _string(json['defaultBranch']),
-        language: _string(json['language']),
-        stars: _intOrNull(json['stars']),
-        forks: _intOrNull(json['forks']),
-        openIssues: _intOrNull(json['openIssues']),
-        updatedAt: _dateOrNull(json['updatedAt']),
-      );
+  static Repository decodeRepository(Map<String, dynamic> json) => Repository(
+    id: _string(json['id']),
+    name: _string(json['name']),
+    fullName: _string(json['fullName']),
+    owner: _string(json['owner']),
+    description: _string(json['description']),
+    isPrivate: json['isPrivate'] == true,
+    isFork: json['isFork'] == true,
+    url: _string(json['url']),
+    defaultBranch: _string(json['defaultBranch']),
+    language: _string(json['language']),
+    stars: _intOrNull(json['stars']),
+    forks: _intOrNull(json['forks']),
+    openIssues: _intOrNull(json['openIssues']),
+    updatedAt: _dateOrNull(json['updatedAt']),
+  );
 
   static Map<String, dynamic> encodeActivity(DeveloperActivity value) => {
-        'id': value.id,
-        'type': value.type.name,
-        'repository': value.repository,
-        'title': value.title,
-        'subtitle': value.subtitle,
-        'identifier': value.identifier,
-        'rawType': value.rawType,
-        'timestamp': value.timestamp.toUtc().toIso8601String(),
-        'commitCount': value.commitCount,
-      };
+    'id': value.id,
+    'type': value.type.name,
+    'repository': value.repository,
+    'title': value.title,
+    'subtitle': value.subtitle,
+    'identifier': value.identifier,
+    'rawType': value.rawType,
+    'timestamp': value.timestamp.toUtc().toIso8601String(),
+    'commitCount': value.commitCount,
+  };
 
   static DeveloperActivity decodeActivity(Map<String, dynamic> json) {
     final typeName = _string(json['type']);
-    final typeIndex =
-        DeveloperActivityType.values.indexWhere((value) => value.name == typeName);
+    final typeIndex = DeveloperActivityType.values.indexWhere(
+      (value) => value.name == typeName,
+    );
     final type = typeIndex < 0 ? null : DeveloperActivityType.values[typeIndex];
     final timestamp = _dateOrNull(json['timestamp']);
     if (type == null || timestamp == null) {
@@ -127,8 +127,7 @@ class ProviderSnapshotCodec {
 
   static List<Map<String, dynamic>> encodeRepositories(
     List<Repository> values,
-  ) =>
-      values.map(encodeRepository).toList(growable: false);
+  ) => values.map(encodeRepository).toList(growable: false);
 
   static List<Repository> decodeRepositories(dynamic value) {
     if (value is! List) {
@@ -142,8 +141,7 @@ class ProviderSnapshotCodec {
 
   static List<Map<String, dynamic>> encodeActivities(
     List<DeveloperActivity> values,
-  ) =>
-      values.map(encodeActivity).toList(growable: false);
+  ) => values.map(encodeActivity).toList(growable: false);
 
   static List<DeveloperActivity> decodeActivities(dynamic value) {
     if (value is! List) {

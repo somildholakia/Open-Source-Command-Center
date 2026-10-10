@@ -34,8 +34,11 @@ class CartoonWelcomeBanner extends StatelessWidget {
           const Positioned(
             right: 54,
             top: -16,
-            child: Icon(Icons.auto_awesome_rounded,
-                size: 30, color: Color(0xFFFFE5A5)),
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              size: 30,
+              color: Color(0xFFFFE5A5),
+            ),
           ),
           const Positioned(
             right: 4,
@@ -56,7 +59,9 @@ class CartoonWelcomeBanner extends StatelessWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFE9B8),
                         borderRadius: BorderRadius.circular(30),
@@ -136,16 +141,8 @@ class _CartoonContributor extends StatelessWidget {
               ),
             ),
           ),
-          const Positioned(
-            top: 42,
-            left: 36,
-            child: _FaceDot(),
-          ),
-          const Positioned(
-            top: 42,
-            right: 36,
-            child: _FaceDot(),
-          ),
+          const Positioned(top: 42, left: 36, child: _FaceDot()),
+          const Positioned(top: 42, right: 36, child: _FaceDot()),
           Positioned(
             top: 58,
             child: Container(
@@ -164,14 +161,12 @@ class _CartoonContributor extends StatelessWidget {
           const Positioned(
             right: 0,
             top: 3,
-            child: Icon(Icons.star_rounded,
-                color: Color(0xFF6C4CE8), size: 30),
+            child: Icon(Icons.star_rounded, color: Color(0xFF6C4CE8), size: 30),
           ),
           const Positioned(
             left: 0,
             bottom: 4,
-            child: Icon(Icons.bolt_rounded,
-                color: Color(0xFF008F86), size: 28),
+            child: Icon(Icons.bolt_rounded, color: Color(0xFF008F86), size: 28),
           ),
         ],
       ),
@@ -184,11 +179,11 @@ class _FaceDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: 7,
-        height: 9,
-        decoration: const BoxDecoration(
-          color: Color(0xFF71372D),
-          borderRadius: BorderRadius.all(Radius.circular(8)),
-        ),
-      );
+    width: 7,
+    height: 9,
+    decoration: const BoxDecoration(
+      color: Color(0xFF71372D),
+      borderRadius: BorderRadius.all(Radius.circular(8)),
+    ),
+  );
 }

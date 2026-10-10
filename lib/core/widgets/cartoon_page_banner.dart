@@ -74,18 +74,16 @@ class CartoonPageBanner extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.45,
-                        height: 1.05,
-                      ),
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.45,
+                    height: 1.05,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                        height: 1.25,
-                      ),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: scheme.onSurfaceVariant, height: 1.25),
                 ),
               ],
             ),

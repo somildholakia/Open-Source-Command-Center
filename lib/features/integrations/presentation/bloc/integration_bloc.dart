@@ -182,7 +182,8 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     Future<ConnectionStore> Function()? storeFactory,
     Future<LocalSnapshotStore> Function()? snapshotStoreFactory,
   }) : _storeFactory = storeFactory ?? _defaultStoreFactory,
-       _snapshotStoreFactory = snapshotStoreFactory ?? _defaultSnapshotStoreFactory,
+       _snapshotStoreFactory =
+           snapshotStoreFactory ?? _defaultSnapshotStoreFactory,
        super(const IntegrationState()) {
     on<IntegrationStarted>(_onStarted);
     on<IntegrationConnectRequested>(_onConnectRequested);
@@ -220,19 +221,23 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     try {
       final cache = await _snapshotStoreFactory();
       final profileSnapshot = await cache.read(
-        accountId: accountId, namespace: 'profile',
+        accountId: accountId,
+        namespace: 'profile',
         schemaVersion: _snapshotSchemaVersion,
       );
       final repositoriesSnapshot = await cache.read(
-        accountId: accountId, namespace: 'repositories',
+        accountId: accountId,
+        namespace: 'repositories',
         schemaVersion: _snapshotSchemaVersion,
       );
       final activitySnapshot = await cache.read(
-        accountId: accountId, namespace: 'activity',
+        accountId: accountId,
+        namespace: 'activity',
         schemaVersion: _snapshotSchemaVersion,
       );
       final contributionsSnapshot = await cache.read(
-        accountId: accountId, namespace: 'contributions',
+        accountId: accountId,
+        namespace: 'contributions',
         schemaVersion: _snapshotSchemaVersion,
       );
       final profile = profileSnapshot == null
@@ -253,17 +258,21 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
           : ProviderSnapshotCodec.decodeContributions(
               contributionsSnapshot.payload,
             );
-      if (profile != null || repositories != null || activities != null ||
+      if (profile != null ||
+          repositories != null ||
+          activities != null ||
           contributions != null) {
-        emit(IntegrationState(
-          phase: IntegrationPhase.connected,
-          connection: record,
-          profile: profile,
-          repositories: repositories ?? const [],
-          activities: activities ?? const [],
-          contributions: contributions,
-          isStale: true,
-        ));
+        emit(
+          IntegrationState(
+            phase: IntegrationPhase.connected,
+            connection: record,
+            profile: profile,
+            repositories: repositories ?? const [],
+            activities: activities ?? const [],
+            contributions: contributions,
+            isStale: true,
+          ),
+        );
       }
     } catch (_) {
       // A corrupt/unavailable cache must never prevent a live refresh.
@@ -283,28 +292,36 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
       final cache = await _snapshotStoreFactory();
       if (profile is DeveloperProfile) {
         await cache.write(
-          accountId: accountId, namespace: 'profile',
+          accountId: accountId,
+          namespace: 'profile',
           payload: ProviderSnapshotCodec.encodeProfile(profile),
           schemaVersion: _snapshotSchemaVersion,
         );
       }
       if (repositories is List<Repository>) {
         await cache.write(
-          accountId: accountId, namespace: 'repositories',
-          payload: {'items': ProviderSnapshotCodec.encodeRepositories(repositories)},
+          accountId: accountId,
+          namespace: 'repositories',
+          payload: {
+            'items': ProviderSnapshotCodec.encodeRepositories(repositories),
+          },
           schemaVersion: _snapshotSchemaVersion,
         );
       }
       if (activities is List<DeveloperActivity>) {
         await cache.write(
-          accountId: accountId, namespace: 'activity',
-          payload: {'items': ProviderSnapshotCodec.encodeActivities(activities)},
+          accountId: accountId,
+          namespace: 'activity',
+          payload: {
+            'items': ProviderSnapshotCodec.encodeActivities(activities),
+          },
           schemaVersion: _snapshotSchemaVersion,
         );
       }
       if (contributions is ContributionSummary) {
         await cache.write(
-          accountId: accountId, namespace: 'contributions',
+          accountId: accountId,
+          namespace: 'contributions',
           payload: ProviderSnapshotCodec.encodeContributions(contributions),
           schemaVersion: _snapshotSchemaVersion,
         );

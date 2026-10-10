@@ -24,10 +24,10 @@ class LocalSnapshot {
   }
 
   Map<String, dynamic> toJson() => {
-        'schemaVersion': schemaVersion,
-        'cachedAt': cachedAt.toUtc().toIso8601String(),
-        'payload': payload,
-      };
+    'schemaVersion': schemaVersion,
+    'cachedAt': cachedAt.toUtc().toIso8601String(),
+    'payload': payload,
+  };
 
   static LocalSnapshot? fromJson(
     String? encoded, {
@@ -115,17 +115,15 @@ class LocalSnapshotStore {
     await _preferences.setString(_key(accountId, namespace), encoded);
   }
 
-  Future<void> remove({
-    required String accountId,
-    required String namespace,
-  }) =>
+  Future<void> remove({required String accountId, required String namespace}) =>
       _preferences.remove(_key(accountId, namespace));
 
   /// Clears only this account's snapshots, leaving other accounts and app
   /// preferences untouched. Call on explicit local-data deletion/disconnect.
   Future<void> clearAccount(String accountId) async {
     final prefix = _prefix + _encode(accountId) + ':';
-    final keys = _preferences.getKeys()
+    final keys = _preferences
+        .getKeys()
         .where((key) => key.startsWith(prefix))
         .toList(growable: false);
     for (final key in keys) {

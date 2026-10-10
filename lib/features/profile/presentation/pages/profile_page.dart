@@ -55,7 +55,8 @@ class ProfilePage extends StatelessWidget {
                       const CartoonPageBanner(
                         eyebrow: 'Your developer story',
                         title: 'This is your space',
-                        subtitle: 'Your identity, connections and achievements.',
+                        subtitle:
+                            'Your identity, connections and achievements.',
                         icon: Icons.face_retouching_natural_rounded,
                         accent: Color(0xFF008F86),
                       ),

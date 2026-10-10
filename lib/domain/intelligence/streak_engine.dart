@@ -150,7 +150,9 @@ class StreakEngine {
     for (var i = 1; i < sorted.length; i++) {
       final previous = dateFromKey(sorted[i - 1]);
       final current = dateFromKey(sorted[i]);
-      if (previous != null && current != null && _isNextDay(previous, current)) {
+      if (previous != null &&
+          current != null &&
+          _isNextDay(previous, current)) {
         run++;
       } else {
         run = 1;

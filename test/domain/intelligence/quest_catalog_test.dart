@@ -32,14 +32,8 @@ void main() {
     test('ids are unique and cover both periods', () {
       final ids = catalog.map((quest) => quest.id).toList();
       expect(ids.toSet().length, ids.length);
-      expect(
-        catalog.where((q) => q.period == QuestPeriod.daily),
-        isNotEmpty,
-      );
-      expect(
-        catalog.where((q) => q.period == QuestPeriod.weekly),
-        isNotEmpty,
-      );
+      expect(catalog.where((q) => q.period == QuestPeriod.daily), isNotEmpty);
+      expect(catalog.where((q) => q.period == QuestPeriod.weekly), isNotEmpty);
     });
 
     test('every quest is presentable and worth completing', () {

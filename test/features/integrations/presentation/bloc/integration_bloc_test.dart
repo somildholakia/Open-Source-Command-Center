@@ -213,13 +213,19 @@ void main() {
       await cache.write(
         accountId: 'github:octocat',
         namespace: 'repositories',
-        payload: {'items': ProviderSnapshotCodec.encodeRepositories([sampleRepository()])},
+        payload: {
+          'items': ProviderSnapshotCodec.encodeRepositories([
+            sampleRepository(),
+          ]),
+        },
         schemaVersion: 1,
       );
       await cache.write(
         accountId: 'github:octocat',
         namespace: 'activity',
-        payload: {'items': ProviderSnapshotCodec.encodeActivities([sampleActivity()])},
+        payload: {
+          'items': ProviderSnapshotCodec.encodeActivities([sampleActivity()]),
+        },
         schemaVersion: 1,
       );
       await cache.write(
@@ -562,54 +568,50 @@ void main() {
         await bloc.close();
       },
     );
-    test(
-      'reset clears active account snapshots on sign-out',
-      () async {
-        SharedPreferences.setMockInitialValues({});
-        final preferences = await SharedPreferences.getInstance();
-        final cache = LocalSnapshotStore(preferences);
-        await cache.write(
+    test('reset clears active account snapshots on sign-out', () async {
+      SharedPreferences.setMockInitialValues({});
+      final preferences = await SharedPreferences.getInstance();
+      final cache = LocalSnapshotStore(preferences);
+      await cache.write(
+        accountId: 'github:octocat',
+        namespace: 'profile',
+        payload: ProviderSnapshotCodec.encodeProfile(sampleProfile()),
+        schemaVersion: 1,
+      );
+      final provider = FakeDeveloperProvider(
+        connected: true,
+        profile: sampleProfile(),
+      );
+      final bloc = IntegrationBloc(
+        provider: provider,
+        storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+        snapshotStoreFactory: () async => cache,
+      );
+
+      bloc.add(const IntegrationStarted());
+      await waitFor(
+        bloc,
+        (state) =>
+            !state.isBusy &&
+            state.profile != null &&
+            provider.fetchProfileCalls > 0,
+      );
+
+      bloc.add(const IntegrationResetRequested());
+      await waitFor(
+        bloc,
+        (state) => state.phase == IntegrationPhase.disconnected,
+      );
+
+      expect(
+        await cache.read(
           accountId: 'github:octocat',
           namespace: 'profile',
-          payload: ProviderSnapshotCodec.encodeProfile(sampleProfile()),
           schemaVersion: 1,
-        );
-        final provider = FakeDeveloperProvider(
-          connected: true,
-          profile: sampleProfile(),
-        );
-        final bloc = IntegrationBloc(
-          provider: provider,
-          storeFactory: () async =>
-              InMemoryConnectionStore(connectedRecord()),
-          snapshotStoreFactory: () async => cache,
-        );
-
-        bloc.add(const IntegrationStarted());
-        await waitFor(
-          bloc,
-          (state) =>
-              !state.isBusy &&
-              state.profile != null &&
-              provider.fetchProfileCalls > 0,
-        );
-
-        bloc.add(const IntegrationResetRequested());
-        await waitFor(
-          bloc,
-          (state) => state.phase == IntegrationPhase.disconnected,
-        );
-
-        expect(
-          await cache.read(
-            accountId: 'github:octocat',
-            namespace: 'profile',
-            schemaVersion: 1,
-          ),
-          isNull,
-        );
-        await bloc.close();
-      },
-    );
+        ),
+        isNull,
+      );
+      await bloc.close();
+    });
   });
 }

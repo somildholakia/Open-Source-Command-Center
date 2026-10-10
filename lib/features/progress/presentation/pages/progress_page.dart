@@ -59,14 +59,15 @@ class ProgressPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                  const CartoonPageBanner(
-                    eyebrow: 'Level up',
-                    title: 'Progress is an adventure',
-                    subtitle: 'Celebrate your streaks, quests and milestones.',
-                    icon: Icons.emoji_events_rounded,
-                    accent: Color(0xFFCC5A27),
-                  ),
-                  AppSpacing.vSpaceLg,
+                    const CartoonPageBanner(
+                      eyebrow: 'Level up',
+                      title: 'Progress is an adventure',
+                      subtitle:
+                          'Celebrate your streaks, quests and milestones.',
+                      icon: Icons.emoji_events_rounded,
+                      accent: Color(0xFFCC5A27),
+                    ),
+                    AppSpacing.vSpaceLg,
                     ..._buildBody(context, state),
                     AppSpacing.vSpaceXl,
                   ],

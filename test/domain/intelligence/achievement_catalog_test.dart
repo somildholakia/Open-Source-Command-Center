@@ -87,7 +87,8 @@ void main() {
         expect(
           definition.isUnlocked(below),
           isFalse,
-          reason: '${definition.id} must not unlock at ${definition.target - 1}',
+          reason:
+              '${definition.id} must not unlock at ${definition.target - 1}',
         );
         expect(definition.cappedProgress(below), definition.target - 1);
       }

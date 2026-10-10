@@ -277,8 +277,7 @@ class DeveloperIntelligenceEngine {
       if (xp <= 0) continue;
       activityXp += xp;
       eventsCounted++;
-      byActivityType[activity.type] =
-          (byActivityType[activity.type] ?? 0) + xp;
+      byActivityType[activity.type] = (byActivityType[activity.type] ?? 0) + xp;
     }
 
     final activeDayXp = activeDays * XpRules.activeDay;
@@ -299,15 +298,17 @@ class DeveloperIntelligenceEngine {
     required DeveloperMetrics metrics,
     required ProgressionRecord progression,
   }) {
-    return AchievementCatalog.all.map((definition) {
-      final unlockedAt = progression.unlockedAt(definition.id);
-      return AchievementStatus(
-        definition: definition,
-        unlocked: unlockedAt != null || definition.isUnlocked(metrics),
-        unlockedAt: unlockedAt,
-        progress: definition.progress(metrics),
-      );
-    }).toList(growable: false);
+    return AchievementCatalog.all
+        .map((definition) {
+          final unlockedAt = progression.unlockedAt(definition.id);
+          return AchievementStatus(
+            definition: definition,
+            unlocked: unlockedAt != null || definition.isUnlocked(metrics),
+            unlockedAt: unlockedAt,
+            progress: definition.progress(metrics),
+          );
+        })
+        .toList(growable: false);
   }
 
   // --- Quests -------------------------------------------------------------
@@ -386,7 +387,9 @@ class DeveloperIntelligenceEngine {
     for (final activity in activities) {
       final day = StreakEngine.startOfDay(activity.timestamp);
       if (day.isBefore(from) || day.isAfter(to)) continue;
-      eventsByDay.putIfAbsent(StreakEngine.dateKey(day), () => []).add(activity);
+      eventsByDay
+          .putIfAbsent(StreakEngine.dateKey(day), () => [])
+          .add(activity);
     }
 
     var contributionsInWindow = calendarContributions;

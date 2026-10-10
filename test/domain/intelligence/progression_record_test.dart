@@ -8,7 +8,10 @@ void main() {
     test('the empty record has no history', () {
       expect(ProgressionRecord.empty.isEmpty, isTrue);
       expect(ProgressionRecord.empty.completedQuestCount, 0);
-      expect(ProgressionRecord.empty.isAchievementUnlocked('anything'), isFalse);
+      expect(
+        ProgressionRecord.empty.isAchievementUnlocked('anything'),
+        isFalse,
+      );
       expect(ProgressionRecord.empty.isQuestCompleted('anything'), isFalse);
     });
 
@@ -82,7 +85,10 @@ void main() {
   group('serialization', () {
     test('round-trips through encode and decode', () {
       final record = ProgressionRecord(
-        unlockedAchievements: {'first_merge': unlockedAt, 'warm_up': unlockedAt},
+        unlockedAchievements: {
+          'first_merge': unlockedAt,
+          'warm_up': unlockedAt,
+        },
         completedQuestKeys: const {
           'daily_commit@daily:2026-10-08',
           'weekly_issues@weekly:2026-10-05',
@@ -97,8 +103,10 @@ void main() {
     });
 
     test('an empty record round-trips to an equal record', () {
-      expect(ProgressionRecord.decode(ProgressionRecord.empty.encode()),
-          ProgressionRecord.empty);
+      expect(
+        ProgressionRecord.decode(ProgressionRecord.empty.encode()),
+        ProgressionRecord.empty,
+      );
     });
 
     test('malformed input degrades to an empty record instead of throwing', () {

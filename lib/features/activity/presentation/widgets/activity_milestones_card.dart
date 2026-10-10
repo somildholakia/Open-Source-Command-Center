@@ -26,7 +26,8 @@ class ActivityMilestonesCard extends StatelessWidget {
       buildWhen: (previous, current) =>
           previous.hasData != current.hasData ||
           previous.intelligence.metrics != current.intelligence.metrics ||
-          previous.intelligence.achievements != current.intelligence.achievements,
+          previous.intelligence.achievements !=
+              current.intelligence.achievements,
       builder: (context, state) {
         if (!state.hasData) return const SizedBox.shrink();
 
@@ -173,10 +174,7 @@ class _MilestoneTile extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Icon(icon, size: AppSpacing.iconSizeSmall, color: color),
-          Text(
-            value,
-            style: AppTypography.monoLarge.copyWith(color: color),
-          ),
+          Text(value, style: AppTypography.monoLarge.copyWith(color: color)),
           Text(
             label,
             style: AppTypography.captionSmall.copyWith(

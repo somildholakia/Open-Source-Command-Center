@@ -101,8 +101,7 @@ void main() {
   });
 
   group('derivation', () {
-    test('publishes real XP, level, streak, achievements and quests',
-        () async {
+    test('publishes real XP, level, streak, achievements and quests', () async {
       final bloc = IntelligenceBloc(
         InMemoryProgressionStore(),
         clock: () => now,
@@ -139,24 +138,26 @@ void main() {
       await bloc.close();
     });
 
-    test('persists first-time unlocks and quest completions per account',
-        () async {
-      final store = InMemoryProgressionStore();
-      final bloc = IntelligenceBloc(store, clock: () => now);
+    test(
+      'persists first-time unlocks and quest completions per account',
+      () async {
+        final store = InMemoryProgressionStore();
+        final bloc = IntelligenceBloc(store, clock: () => now);
 
-      bloc.add(connectedSource(activities: [activity(id: 'merge')]));
-      await waitFor(bloc, (state) => state.computedAt != null);
+        bloc.add(connectedSource(activities: [activity(id: 'merge')]));
+        await waitFor(bloc, (state) => state.computedAt != null);
 
-      final saved = store.load('github:octocat');
-      expect(saved.isAchievementUnlocked('first_merge'), isTrue);
-      expect(saved.unlockedAt('first_merge'), now.toUtc());
-      expect(saved.completedQuestKeys, isNotEmpty);
-      // Nothing is reported as new once it has been recorded.
-      expect(bloc.state.intelligence.newlyUnlockedAchievementIds, isEmpty);
-      expect(bloc.state.intelligence.newlyCompletedQuestKeys, isEmpty);
+        final saved = store.load('github:octocat');
+        expect(saved.isAchievementUnlocked('first_merge'), isTrue);
+        expect(saved.unlockedAt('first_merge'), now.toUtc());
+        expect(saved.completedQuestKeys, isNotEmpty);
+        // Nothing is reported as new once it has been recorded.
+        expect(bloc.state.intelligence.newlyUnlockedAchievementIds, isEmpty);
+        expect(bloc.state.intelligence.newlyCompletedQuestKeys, isEmpty);
 
-      await bloc.close();
-    });
+        await bloc.close();
+      },
+    );
 
     test('a later session keeps unlocked achievements from history', () async {
       final store = InMemoryProgressionStore();
@@ -196,10 +197,7 @@ void main() {
           withContributions: null,
         ),
       );
-      await waitFor(
-        bloc,
-        (state) => state.accountId == 'github:someone-else',
-      );
+      await waitFor(bloc, (state) => state.accountId == 'github:someone-else');
 
       expect(achievementOf(bloc.state, 'first_merge').unlocked, isFalse);
       expect(store.load('github:someone-else'), ProgressionRecord.empty);
@@ -255,28 +253,30 @@ void main() {
       await bloc.close();
     });
 
-    test('a failure with no data is an error state, not fake progress',
-        () async {
-      final bloc = IntelligenceBloc(
-        InMemoryProgressionStore(),
-        clock: () => now,
-      );
+    test(
+      'a failure with no data is an error state, not fake progress',
+      () async {
+        final bloc = IntelligenceBloc(
+          InMemoryProgressionStore(),
+          clock: () => now,
+        );
 
-      bloc.add(
-        connectedSource(
-          withContributions: null,
-          failure: const ApiUnavailable(statusCode: 503),
-        ),
-      );
-      await waitFor(bloc, (state) => state.failure != null);
+        bloc.add(
+          connectedSource(
+            withContributions: null,
+            failure: const ApiUnavailable(statusCode: 503),
+          ),
+        );
+        await waitFor(bloc, (state) => state.failure != null);
 
-      expect(bloc.state.hasData, isFalse);
-      expect(bloc.state.isStale, isFalse);
-      expect(bloc.state.intelligence.xp.totalXp, 0);
-      expect(bloc.state.intelligence.level.level, 1);
+        expect(bloc.state.hasData, isFalse);
+        expect(bloc.state.isStale, isFalse);
+        expect(bloc.state.intelligence.xp.totalXp, 0);
+        expect(bloc.state.intelligence.level.level, 1);
 
-      await bloc.close();
-    });
+        await bloc.close();
+      },
+    );
 
     test('expired and disconnected both need a connection', () async {
       final bloc = IntelligenceBloc(
@@ -318,7 +318,9 @@ void main() {
 
       expect(achievementOf(bloc.state, 'ten_merges').unlocked, isTrue);
       expect(
-        bloc.state.progression.isQuestCompleted('daily_commit@daily:2026-10-01'),
+        bloc.state.progression.isQuestCompleted(
+          'daily_commit@daily:2026-10-01',
+        ),
         isTrue,
       );
 
@@ -333,7 +335,9 @@ void main() {
       expect(achievementOf(bloc.state, 'ten_merges').unlocked, isFalse);
       expect(achievementOf(bloc.state, 'first_merge').unlocked, isTrue);
       expect(
-        bloc.state.progression.isQuestCompleted('daily_commit@daily:2026-10-01'),
+        bloc.state.progression.isQuestCompleted(
+          'daily_commit@daily:2026-10-01',
+        ),
         isFalse,
       );
 

@@ -63,10 +63,7 @@ void main() {
   }
 
   IntelligenceBloc blocWithSource({ProviderFailure? failure}) {
-    final bloc = IntelligenceBloc(
-      InMemoryProgressionStore(),
-      clock: () => now,
-    );
+    final bloc = IntelligenceBloc(InMemoryProgressionStore(), clock: () => now);
     bloc.add(connectedSource(failure: failure));
     return bloc;
   }
@@ -208,9 +205,7 @@ void main() {
       expect(find.byType(ProgressLevelCard), findsOneWidget);
 
       // A later snapshot keeps the data but reports a failed refresh.
-      bloc.add(
-        connectedSource(failure: const ApiUnavailable(statusCode: 503)),
-      );
+      bloc.add(connectedSource(failure: const ApiUnavailable(statusCode: 503)));
       await pumpPage(tester, bloc);
 
       expect(bloc.state.isStale, isTrue);
@@ -266,8 +261,9 @@ void main() {
 
   group('ProgressAchievementCard', () {
     testWidgets('shows progress toward a locked achievement', (tester) async {
-      final definition = AchievementCatalog.all
-          .firstWhere((a) => a.id == 'week_storm');
+      final definition = AchievementCatalog.all.firstWhere(
+        (a) => a.id == 'week_storm',
+      );
       final status = AchievementStatus(
         definition: definition,
         unlocked: false,
@@ -291,8 +287,9 @@ void main() {
     });
 
     testWidgets('shows the unlock time for a recorded unlock', (tester) async {
-      final definition = AchievementCatalog.all
-          .firstWhere((a) => a.id == 'first_merge');
+      final definition = AchievementCatalog.all.firstWhere(
+        (a) => a.id == 'first_merge',
+      );
       final status = AchievementStatus(
         definition: definition,
         unlocked: true,
@@ -409,9 +406,9 @@ void main() {
     test('summarizes level, streak, achievements and quests locally', () {
       final intelligence = DeveloperIntelligenceEngine.compute(
         activities: [mergeActivity],
-        contributions: const ContributionSummary(dailyCounts: {
-          '2026-10-08': 1,
-        }),
+        contributions: const ContributionSummary(
+          dailyCounts: {'2026-10-08': 1},
+        ),
         now: now,
       );
 

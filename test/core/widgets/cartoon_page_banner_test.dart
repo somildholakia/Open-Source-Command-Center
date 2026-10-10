@@ -6,8 +6,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   for (final width in <double>[320, 360, 430, 768]) {
-    testWidgets('cartoon section banner fits at $width logical pixels',
-        (tester) async {
+    testWidgets('cartoon section banner fits at $width logical pixels', (
+      tester,
+    ) async {
       tester.view.devicePixelRatio = 1;
       tester.view.physicalSize = Size(width, 900);
       addTearDown(tester.view.resetPhysicalSize);

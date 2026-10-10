@@ -262,9 +262,7 @@ class _DailyQuestCard extends StatelessWidget {
                     style: AppTypography.captionSmall.copyWith(
                       color: quest.isCompleted
                           ? AppColors.successAccent
-                          : colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.6,
-                            ),
+                          : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                       fontStyle: quest.isCompleted
                           ? FontStyle.normal
                           : FontStyle.italic,

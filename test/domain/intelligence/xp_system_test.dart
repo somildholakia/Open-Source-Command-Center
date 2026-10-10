@@ -2,10 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opensource_command_center/domain/domain.dart';
 
 void main() {
-  DeveloperActivity activityOf(
-    DeveloperActivityType type, {
-    int? commitCount,
-  }) {
+  DeveloperActivity activityOf(DeveloperActivityType type, {int? commitCount}) {
     return DeveloperActivity(
       id: 'evt',
       type: type,
@@ -53,15 +50,21 @@ void main() {
 
     test('every activity type has a deterministic value', () {
       expect(
-        XpRules.forActivity(activityOf(DeveloperActivityType.pullRequestOpened)),
+        XpRules.forActivity(
+          activityOf(DeveloperActivityType.pullRequestOpened),
+        ),
         XpRules.pullRequestOpened,
       );
       expect(
-        XpRules.forActivity(activityOf(DeveloperActivityType.pullRequestMerged)),
+        XpRules.forActivity(
+          activityOf(DeveloperActivityType.pullRequestMerged),
+        ),
         XpRules.pullRequestMerged,
       );
       expect(
-        XpRules.forActivity(activityOf(DeveloperActivityType.pullRequestClosed)),
+        XpRules.forActivity(
+          activityOf(DeveloperActivityType.pullRequestClosed),
+        ),
         XpRules.pullRequestClosed,
       );
       expect(
@@ -83,7 +86,9 @@ void main() {
         XpRules.issueCommented,
       );
       expect(
-        XpRules.forActivity(activityOf(DeveloperActivityType.repositoryCreated)),
+        XpRules.forActivity(
+          activityOf(DeveloperActivityType.repositoryCreated),
+        ),
         XpRules.repositoryCreated,
       );
       expect(
@@ -91,18 +96,13 @@ void main() {
         XpRules.repositoryForked,
       );
       expect(
-        XpRules.forActivity(
-          activityOf(DeveloperActivityType.releasePublished),
-        ),
+        XpRules.forActivity(activityOf(DeveloperActivityType.releasePublished)),
         XpRules.releasePublished,
       );
     });
 
     test('starring a repository is tracked but never rewarded', () {
-      expect(
-        XpRules.forActivity(activityOf(DeveloperActivityType.starred)),
-        0,
-      );
+      expect(XpRules.forActivity(activityOf(DeveloperActivityType.starred)), 0);
       expect(XpRules.starred, 0);
     });
   });
@@ -127,8 +127,10 @@ void main() {
         totalXp: 225,
       );
 
-      expect(breakdown.activityXp + breakdown.activeDayXp + breakdown.achievementXp,
-          breakdown.totalXp);
+      expect(
+        breakdown.activityXp + breakdown.activeDayXp + breakdown.achievementXp,
+        breakdown.totalXp,
+      );
     });
 
     test('reports XP per activity type and defaults to zero', () {

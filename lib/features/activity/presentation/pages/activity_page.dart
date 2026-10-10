@@ -57,7 +57,8 @@ class _ActivityPageState extends State<ActivityPage> {
                     const CartoonPageBanner(
                       eyebrow: 'Your journey',
                       title: 'Every commit tells a story',
-                      subtitle: 'Pick up where your open-source adventure left off.',
+                      subtitle:
+                          'Pick up where your open-source adventure left off.',
                       icon: Icons.rocket_launch_rounded,
                       accent: Color(0xFF008F86),
                     ),

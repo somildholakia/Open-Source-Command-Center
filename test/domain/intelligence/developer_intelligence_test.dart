@@ -97,27 +97,31 @@ void main() {
       expect(metrics.starsReceived, 0);
     });
 
-    test('uses the provider contribution calendar as the contribution source',
-        () {
-      final metrics = compute().metrics;
+    test(
+      'uses the provider contribution calendar as the contribution source',
+      () {
+        final metrics = compute().metrics;
 
-      expect(metrics.totalContributions, 12); // calendar total
-      expect(metrics.contributionsToday, 3);
-      expect(metrics.eventsToday, 2);
-    });
+        expect(metrics.totalContributions, 12); // calendar total
+        expect(metrics.contributionsToday, 3);
+        expect(metrics.eventsToday, 2);
+      },
+    );
 
-    test('the weekly window includes Monday and excludes the previous Sunday',
-        () {
-      final intelligence = compute(
-        withActivities: const [],
-        withContributions: const ContributionSummary(
-          dailyCounts: {'2026-10-04': 5, '2026-10-05': 2, '2026-10-08': 1},
-        ),
-      );
+    test(
+      'the weekly window includes Monday and excludes the previous Sunday',
+      () {
+        final intelligence = compute(
+          withActivities: const [],
+          withContributions: const ContributionSummary(
+            dailyCounts: {'2026-10-04': 5, '2026-10-05': 2, '2026-10-08': 1},
+          ),
+        );
 
-      expect(intelligence.metrics.contributionsThisWeek, 3); // Mon + Thu
-      expect(intelligence.metrics.activeDaysThisWeek, 2);
-    });
+        expect(intelligence.metrics.contributionsThisWeek, 3); // Mon + Thu
+        expect(intelligence.metrics.activeDaysThisWeek, 2);
+      },
+    );
 
     test('derives streaks from the union of calendar and activity days', () {
       final metrics = compute().metrics;
@@ -129,11 +133,10 @@ void main() {
 
     test('repository stars and counts come from the repository list', () {
       final metrics = compute(
-        repositories: [sampleRepository(stars: 42), sampleRepository(
-          id: '2',
-          name: 'second',
-          stars: 8,
-        )],
+        repositories: [
+          sampleRepository(stars: 42),
+          sampleRepository(id: '2', name: 'second', stars: 8),
+        ],
       ).metrics;
 
       expect(metrics.repositories, 2);
@@ -245,23 +248,22 @@ void main() {
         ),
       );
 
-      final merge = intelligence.achievements
-          .firstWhere((status) => status.id == 'first_merge');
+      final merge = intelligence.achievements.firstWhere(
+        (status) => status.id == 'first_merge',
+      );
       expect(merge.unlocked, isTrue);
       expect(merge.unlockedAt, unlockedAt);
-      expect(
-        intelligence.newlyUnlockedAchievementIds,
-        {'first_contribution', 'warm_up'},
-      );
+      expect(intelligence.newlyUnlockedAchievementIds, {
+        'first_contribution',
+        'warm_up',
+      });
       expect(intelligence.xp.achievementXp, 115);
     });
   });
 
   group('quests', () {
     test('evaluate the daily and weekly periods separately', () {
-      final quests = {
-        for (final quest in compute().quests) quest.id: quest,
-      };
+      final quests = {for (final quest in compute().quests) quest.id: quest};
 
       expect(quests['daily_contribution']!.isCompleted, isTrue);
       expect(quests['daily_commit']!.isCompleted, isTrue);
@@ -300,9 +302,7 @@ void main() {
         progression: progression,
       );
 
-      final quests = {
-        for (final quest in intelligence.quests) quest.id: quest,
-      };
+      final quests = {for (final quest in intelligence.quests) quest.id: quest};
       expect(quests['daily_review']!.isCompleted, isTrue);
       expect(quests['weekly_issues']!.isCompleted, isTrue);
       expect(quests['daily_commit']!.isCompleted, isFalse); // new period
