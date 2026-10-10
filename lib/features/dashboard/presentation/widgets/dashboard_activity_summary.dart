@@ -30,9 +30,13 @@ class DashboardActivitySummary extends StatelessWidget {
         }
 
         final recent = state.activities.take(5).toList(growable: false);
-        final pullRequests = recent.where((event) =>
-            event.type == DeveloperActivityType.pullRequestOpened ||
-            event.type == DeveloperActivityType.pullRequestMerged).length;
+        final pullRequests = recent
+            .where(
+              (event) =>
+                  event.type == DeveloperActivityType.pullRequestOpened ||
+                  event.type == DeveloperActivityType.pullRequestMerged,
+            )
+            .length;
         final issuesClosed = recent
             .where((event) => event.type == DeveloperActivityType.issueClosed)
             .length;
@@ -86,7 +90,11 @@ class DashboardActivitySummary extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.cloud_off_rounded, color: scheme.error, size: 18),
+                      Icon(
+                        Icons.cloud_off_rounded,
+                        color: scheme.error,
+                        size: 18,
+                      ),
                       AppSpacing.hSpaceXs,
                       Expanded(
                         child: Text(

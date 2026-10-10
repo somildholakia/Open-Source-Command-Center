@@ -68,10 +68,13 @@ class _ActivityPageState extends State<ActivityPage> {
                       onChanged: (filter) => setState(() => _filter = filter),
                     ),
                     AppSpacing.vSpaceLg,
-                    if (state.isStale && state.failure != null && state.activities.isNotEmpty) ...[
+                    if (state.isStale &&
+                        state.failure != null &&
+                        state.activities.isNotEmpty) ...[
                       StatusMessageCard(
                         icon: Icons.cloud_off_rounded,
-                        message: '${failureMessage(state.failure!)} Showing saved data where available.',
+                        message:
+                            '${failureMessage(state.failure!)} Showing saved data where available.',
                         isError: true,
                         actionLabel: 'Retry',
                         onAction: () => context.read<IntegrationBloc>().add(
@@ -82,7 +85,8 @@ class _ActivityPageState extends State<ActivityPage> {
                     ] else if (state.isStale) ...[
                       StatusMessageCard(
                         icon: Icons.cloud_off_rounded,
-                        message: 'Showing saved data. Refresh to check for updates.',
+                        message:
+                            'Showing saved data. Refresh to check for updates.',
                         actionLabel: 'Refresh',
                         onAction: () => context.read<IntegrationBloc>().add(
                           const IntegrationDataRefreshRequested(),
