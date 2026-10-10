@@ -252,6 +252,47 @@ void main() {
       expect(bloc.state.contributions?.total, 4);
       await bloc.close();
     });
+
+    test('clears this account cache on explicit GitHub disconnect', () async {
+      SharedPreferences.setMockInitialValues({});
+      final preferences = await SharedPreferences.getInstance();
+      final cache = LocalSnapshotStore(preferences);
+      await cache.write(
+        accountId: 'github:octocat',
+        namespace: 'profile',
+        payload: ProviderSnapshotCodec.encodeProfile(sampleProfile()),
+        schemaVersion: 1,
+      );
+      final bloc = IntegrationBloc(
+        provider: FakeDeveloperProvider(
+          connected: true,
+          dataFailure: const NetworkUnavailable(),
+        ),
+        storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+        snapshotStoreFactory: () async => cache,
+      );
+
+      bloc.add(const IntegrationStarted());
+      await waitFor(
+        bloc,
+        (state) => state.isStale && !state.isBusy && state.failure != null,
+      );
+      bloc.add(const IntegrationDisconnectRequested());
+      await waitFor(
+        bloc,
+        (state) => state.phase == IntegrationPhase.disconnected,
+      );
+
+      expect(
+        await cache.read(
+          accountId: 'github:octocat',
+          namespace: 'profile',
+          schemaVersion: 1,
+        ),
+        isNull,
+      );
+      await bloc.close();
+    });
   });
 
   group('connect', () {
