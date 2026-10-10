@@ -14,11 +14,11 @@ import '../../../progress/presentation/bloc/intelligence_bloc.dart';
 import '../widgets/settings_section_card.dart';
 import '../widgets/theme_toggle.dart';
 
-/// Settings screen — Phase 1 foundation.
+/// Settings screen for account, appearance, privacy, and app information.
 ///
-/// Functional: Theme persistence (shared_preferences), Sign Out (AuthBloc).
-/// Presentation-only: Notifications, Privacy, About.
-/// No GitHub (Phase 2), no gamification (Phase 3), no premium/AdMob (Phase 4).
+/// Functional: theme persistence, authenticated account details, and sign-out.
+/// Notifications and privacy controls remain informational until their
+/// corresponding local notification/privacy features are implemented.
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
