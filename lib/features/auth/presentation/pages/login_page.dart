@@ -159,7 +159,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildHeader() {
-    return const CartoonPageBanner(
+    return CartoonPageBanner(
       eyebrow: 'Welcome back, adventurer',
       title: 'Login to Terminal',
       subtitle: 'Connect to continue your journey',
