@@ -68,7 +68,7 @@ class _ActivityPageState extends State<ActivityPage> {
                       onChanged: (filter) => setState(() => _filter = filter),
                     ),
                     AppSpacing.vSpaceLg,
-                    if (state.isStale && state.failure != null) ...[
+                    if (state.isStale && state.failure != null && state.activities.isNotEmpty) ...[
                       StatusMessageCard(
                         icon: Icons.cloud_off_rounded,
                         message: '${failureMessage(state.failure!)} Showing saved data where available.',
