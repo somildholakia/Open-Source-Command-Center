@@ -550,10 +550,20 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
       ),
     );
 
-    final profile = await _safe(() => provider.fetchProfile());
-    final repositories = await _safe(() => provider.fetchRepositories());
-    final activities = await _safe(() => provider.fetchActivity());
-    final contributions = await _safe(() => provider.fetchContributions());
+    // These endpoints are independent. Fetch them concurrently so a slow
+    // contribution response does not delay profile/repository/activity data.
+    // Each request still maps its own failure into a typed result, allowing
+    // partial success and preserving last-known snapshots.
+    final results = await Future.wait<Object?>([
+      _safe(() => provider.fetchProfile()),
+      _safe(() => provider.fetchRepositories()),
+      _safe(() => provider.fetchActivity()),
+      _safe(() => provider.fetchContributions()),
+    ]);
+    final profile = results[0];
+    final repositories = results[1];
+    final activities = results[2];
+    final contributions = results[3];
 
     // Authorization is dead: surface expired + keep record for username.
     if (profile is AuthorizationExpired ||
