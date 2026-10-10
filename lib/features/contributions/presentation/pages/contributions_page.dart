@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/responsive_layout.dart';
+import '../../../../core/widgets/cartoon_page_banner.dart';
 import '../../../../core/widgets/sample_data_banner.dart';
 import '../../../../core/widgets/status_message_card.dart';
 import '../../../integrations/presentation/bloc/integration_bloc.dart';
@@ -43,6 +44,14 @@ class ContributionsPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const CartoonPageBanner(
+                      eyebrow: 'Your impact',
+                      title: 'Look how far you have grown',
+                      subtitle: 'A colorful map of the work you have shipped.',
+                      icon: Icons.local_florist_rounded,
+                      accent: Color(0xFF7C4DFF),
+                    ),
+                    AppSpacing.vSpaceLg,
                     ContributionsHeader(isSample: !state.isConnected),
                     AppSpacing.vSpaceLg,
                     ..._buildBody(context, state),
