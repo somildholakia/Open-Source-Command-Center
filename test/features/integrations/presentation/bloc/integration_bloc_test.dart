@@ -562,5 +562,51 @@ void main() {
         await bloc.close();
       },
     );
+    test(
+      'reset clears active account snapshots on sign-out',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final preferences = await SharedPreferences.getInstance();
+        final cache = LocalSnapshotStore(preferences);
+        await cache.write(
+          accountId: 'github:octocat',
+          namespace: 'profile',
+          payload: ProviderSnapshotCodec.encodeProfile(sampleProfile()),
+          schemaVersion: 1,
+        );
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          profile: sampleProfile(),
+        );
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async =>
+              InMemoryConnectionStore(connectedRecord()),
+          snapshotStoreFactory: () async => cache,
+        );
+
+        bloc.add(const IntegrationStarted());
+        await waitFor(
+          bloc,
+          (state) => !state.isBusy && state.profile != null,
+        );
+
+        bloc.add(const IntegrationResetRequested());
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.disconnected,
+        );
+
+        expect(
+          await cache.read(
+            accountId: 'github:octocat',
+            namespace: 'profile',
+            schemaVersion: 1,
+          ),
+          isNull,
+        );
+        await bloc.close();
+      },
+    );
   });
 }
