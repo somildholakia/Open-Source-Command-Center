@@ -71,3 +71,20 @@ SharedPreferences is suitable for small JSON snapshots only while their size rem
 - No secrets appear in source, logs, preferences, screenshots, or analytics.
 - `dart format`, `flutter analyze`, the complete test suite, and a debug APK build pass in an environment with Flutter installed.
 - A human checks the app on an Android emulator/device in both light and dark themes.
+
+## Privacy and offline acceptance checklist
+
+- [x] Provider response snapshots are versioned and scoped to the connected provider account.
+- [x] A transient refresh failure keeps last-known normalized data visible and marks it stale.
+- [x] Explicit GitHub disconnect clears the active account's snapshots.
+- [x] App sign-out clears the active provider account's snapshots as well as disconnecting its token.
+- [ ] Confirm all cache lifecycle tests pass on the current pull-request head.
+- [ ] Verify offline startup and refresh behavior on an Android emulator.
+- [ ] Verify compact-phone and tablet layouts in both light and dark themes.
+- [ ] Confirm the full formatting, analyzer, and test workflow passes before merge.
+
+The cache is intentionally limited to small normalized snapshots (512 KiB per
+snapshot). It is not a database for unbounded timelines. If history grows, add
+SQLite behind the cache abstraction rather than moving user data to a paid server.
+OAuth credentials must remain in secure storage and must never be written to
+these JSON snapshots or ordinary preferences.
