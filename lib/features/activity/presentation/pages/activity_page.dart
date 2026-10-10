@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/widgets/responsive_layout.dart';
 import '../../../../core/widgets/cartoon_page_banner.dart';
+import '../../../../core/widgets/responsive_layout.dart';
 import '../../../../core/widgets/sample_data_banner.dart';
 import '../../../../core/widgets/status_message_card.dart';
 import '../../../integrations/presentation/bloc/integration_bloc.dart';
