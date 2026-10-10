@@ -4,6 +4,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/responsive_layout.dart';
 import '../../../../core/widgets/cartoon_welcome_banner.dart';
+import '../../integrations/presentation/widgets/cached_data_notice.dart';
 import '../widgets/attention_feed_placeholder.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/dashboard_repositories_section.dart';
@@ -38,6 +39,7 @@ class DashboardPage extends StatelessWidget {
               children: [
                 const CartoonWelcomeBanner(),
                 AppSpacing.vSpaceLg,
+                const CachedDataNotice(),
 
                 // Developer Greeting & Command Center Status Header
                 const DashboardHeader(),
