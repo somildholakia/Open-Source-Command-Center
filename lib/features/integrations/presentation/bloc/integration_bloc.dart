@@ -267,9 +267,8 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
         accountId: accountId,
         namespace: 'profile',
         snapshot: profileSnapshot,
-        decode: () => ProviderSnapshotCodec.decodeProfile(
-          profileSnapshot!.payload,
-        ),
+        decode: () =>
+            ProviderSnapshotCodec.decodeProfile(profileSnapshot!.payload),
       );
       final repositories = await _decodeCachedSnapshot<List<Repository>>(
         cache: cache,
@@ -289,16 +288,15 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
           activitySnapshot!.payload['items'],
         ),
       );
-      final contributions =
-          await _decodeCachedSnapshot<ContributionSummary>(
-            cache: cache,
-            accountId: accountId,
-            namespace: 'contributions',
-            snapshot: contributionsSnapshot,
-            decode: () => ProviderSnapshotCodec.decodeContributions(
-              contributionsSnapshot!.payload,
-            ),
-          );
+      final contributions = await _decodeCachedSnapshot<ContributionSummary>(
+        cache: cache,
+        accountId: accountId,
+        namespace: 'contributions',
+        snapshot: contributionsSnapshot,
+        decode: () => ProviderSnapshotCodec.decodeContributions(
+          contributionsSnapshot!.payload,
+        ),
+      );
       if (profile != null ||
           repositories != null ||
           activities != null ||

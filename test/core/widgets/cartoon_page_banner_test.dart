@@ -66,8 +66,10 @@ void main() {
     );
 
     expect(find.text('Look how far you have grown'), findsOneWidget);
-    expect(find.text('Celebrate your streaks, quests and milestones.'), findsOneWidget);
+    expect(
+      find.text('Celebrate your streaks, quests and milestones.'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
-
 }
