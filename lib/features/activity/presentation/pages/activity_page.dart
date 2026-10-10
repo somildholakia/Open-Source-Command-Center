@@ -67,6 +67,17 @@ class _ActivityPageState extends State<ActivityPage> {
                       onChanged: (filter) => setState(() => _filter = filter),
                     ),
                     AppSpacing.vSpaceLg,
+                    if (state.isStale) ...[
+                      StatusMessageCard(
+                        icon: Icons.cloud_off_rounded,
+                        message: 'Showing saved GitHub data. Refresh to check for updates.',
+                        actionLabel: 'Refresh',
+                        onAction: () => context.read<IntegrationBloc>().add(
+                          const IntegrationDataRefreshRequested(),
+                        ),
+                      ),
+                      AppSpacing.vSpaceMd,
+                    ],
                     ..._buildBody(context, state),
                     AppSpacing.vSpaceXl,
                   ],
