@@ -217,7 +217,11 @@ void main() {
 
       await tester.ensureVisible(find.byType(ProfileSignOutButton));
       await tester.tap(find.byType(ProfileSignOutButton));
-      await tester.pumpAndSettle();
+      // The snackbar has an auto-dismiss timer, so pump its entrance frames
+      // explicitly rather than waiting for every scheduled frame to settle.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
 
       expect(find.byType(ProfilePage), findsOneWidget);
       expect(find.text('Code Master'), findsOneWidget);
