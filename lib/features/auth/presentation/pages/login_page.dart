@@ -376,7 +376,7 @@ class _LoginPageState extends State<LoginPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               githubButton,
-              SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: AppSpacing.sm),
               googleButton,
             ],
           );
@@ -400,7 +400,7 @@ class _LoginPageState extends State<LoginPage> {
       runSpacing: AppSpacing.xxs,
       children: [
         Text(
-          'Don\\'t have an account?',
+          'Don\'t have an account?',
           style: AppTypography.bodyMedium,
           textAlign: TextAlign.center,
         ),
