@@ -56,8 +56,11 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
-      - name: Check Dart formatting
-        run: dart format --output=none --set-exit-if-changed lib test
+      - name: Diagnose and verify Dart formatting
+        run: |
+          dart format test/features/integrations/presentation/bloc/integration_bloc_test.dart
+          git diff --unified=2 -- test/features/integrations/presentation/bloc/integration_bloc_test.dart
+          dart format --output=none --set-exit-if-changed lib test
 
       - name: Analyze
         run: flutter analyze --no-pub
