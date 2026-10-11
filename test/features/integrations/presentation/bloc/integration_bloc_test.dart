@@ -606,72 +606,69 @@ void main() {
       },
     );
 
-    test(
-      'does not restore snapshots or connection metadata when a cache write '
-      'finishes after disconnect',
-      () async {
-        SharedPreferences.setMockInitialValues({});
-        final preferences = await SharedPreferences.getInstance();
-        final cache = DelayedWriteSnapshotStore(preferences);
-        final store = InMemoryConnectionStore(connectedRecord());
-        final provider = FakeDeveloperProvider(
-          connected: true,
-          profile: sampleProfile(),
-          repositories: [sampleRepository()],
-          activities: [sampleActivity()],
-        );
-        final bloc = IntegrationBloc(
-          provider: provider,
-          storeFactory: () async => store,
-          snapshotStoreFactory: () async => cache,
-        );
+    test('does not restore snapshots or connection metadata when a cache write '
+        'finishes after disconnect', () async {
+      SharedPreferences.setMockInitialValues({});
+      final preferences = await SharedPreferences.getInstance();
+      final cache = DelayedWriteSnapshotStore(preferences);
+      final store = InMemoryConnectionStore(connectedRecord());
+      final provider = FakeDeveloperProvider(
+        connected: true,
+        profile: sampleProfile(),
+        repositories: [sampleRepository()],
+        activities: [sampleActivity()],
+      );
+      final bloc = IntegrationBloc(
+        provider: provider,
+        storeFactory: () async => store,
+        snapshotStoreFactory: () async => cache,
+      );
 
-        bloc.add(const IntegrationStarted());
-        await waitFor(
-          bloc,
-          (state) =>
-              !state.isBusy &&
-              state.profile != null &&
-              provider.fetchProfileCalls > 0,
+      bloc.add(const IntegrationStarted());
+      await waitFor(
+        bloc,
+        (state) =>
+            !state.isBusy &&
+            state.profile != null &&
+            provider.fetchProfileCalls > 0,
+      );
+
+      cache.delayNextWrite = true;
+      bloc.add(const IntegrationDataRefreshRequested());
+      await cache.writeStarted.future;
+
+      bloc.add(const IntegrationDisconnectRequested());
+      await waitFor(
+        bloc,
+        (state) => state.phase == IntegrationPhase.disconnected,
+      );
+      expect(store.record, isNull);
+
+      cache.releaseWrite.complete();
+      await cache.delayedWriteCompleted.future;
+      for (var i = 0; i < 50; i++) {
+        final snapshot = await cache.read(
+          accountId: 'github:octocat',
+          namespace: 'profile',
+          schemaVersion: 1,
         );
+        if (snapshot == null) break;
+        await Future<void>.delayed(Duration.zero);
+      }
 
-        cache.delayNextWrite = true;
-        bloc.add(const IntegrationDataRefreshRequested());
-        await cache.writeStarted.future;
-
-        bloc.add(const IntegrationDisconnectRequested());
-        await waitFor(
-          bloc,
-          (state) => state.phase == IntegrationPhase.disconnected,
-        );
-        expect(store.record, isNull);
-
-        cache.releaseWrite.complete();
-        await cache.delayedWriteCompleted.future;
-        for (var i = 0; i < 50; i++) {
-          final snapshot = await cache.read(
-            accountId: 'github:octocat',
-            namespace: 'profile',
-            schemaVersion: 1,
-          );
-          if (snapshot == null) break;
-          await Future<void>.delayed(Duration.zero);
-        }
-
-        expect(bloc.state.phase, IntegrationPhase.disconnected);
-        expect(bloc.state.connection, isNull);
-        expect(store.record, isNull);
-        expect(
-          await cache.read(
-            accountId: 'github:octocat',
-            namespace: 'profile',
-            schemaVersion: 1,
-          ),
-          isNull,
-        );
-        await bloc.close();
-      },
-    );
+      expect(bloc.state.phase, IntegrationPhase.disconnected);
+      expect(bloc.state.connection, isNull);
+      expect(store.record, isNull);
+      expect(
+        await cache.read(
+          accountId: 'github:octocat',
+          namespace: 'profile',
+          schemaVersion: 1,
+        ),
+        isNull,
+      );
+      await bloc.close();
+    });
 
     test(
       'keeps cached data and surfaces the failure when a refresh fails',
