@@ -278,6 +278,23 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     }
   }
 
+  Future<LocalSnapshot?> _readCachedSnapshotSafely({
+    required LocalSnapshotStore cache,
+    required String accountId,
+    required String namespace,
+  }) async {
+    try {
+      return await cache.read(
+        accountId: accountId,
+        namespace: namespace,
+        schemaVersion: _snapshotSchemaVersion,
+      );
+    } catch (_) {
+      // Other namespaces may still be valid and useful offline.
+      return null;
+    }
+  }
+
   Future<void> _restoreCachedData(
     ProviderConnectionRecord record,
     Emitter<IntegrationState> emit, {
@@ -287,26 +304,34 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     if (accountId == null) return;
     try {
       final cache = await _snapshotStoreFactory();
-      final profileSnapshot = await cache.read(
-        accountId: accountId,
-        namespace: 'profile',
-        schemaVersion: _snapshotSchemaVersion,
-      );
-      final repositoriesSnapshot = await cache.read(
-        accountId: accountId,
-        namespace: 'repositories',
-        schemaVersion: _snapshotSchemaVersion,
-      );
-      final activitySnapshot = await cache.read(
-        accountId: accountId,
-        namespace: 'activity',
-        schemaVersion: _snapshotSchemaVersion,
-      );
-      final contributionsSnapshot = await cache.read(
-        accountId: accountId,
-        namespace: 'contributions',
-        schemaVersion: _snapshotSchemaVersion,
-      );
+      // Cache namespaces are independent. Read them concurrently and isolate
+      // failures so one unavailable/corrupt key cannot hide other valid data.
+      final snapshots = await Future.wait<LocalSnapshot?>([
+        _readCachedSnapshotSafely(
+          cache: cache,
+          accountId: accountId,
+          namespace: 'profile',
+        ),
+        _readCachedSnapshotSafely(
+          cache: cache,
+          accountId: accountId,
+          namespace: 'repositories',
+        ),
+        _readCachedSnapshotSafely(
+          cache: cache,
+          accountId: accountId,
+          namespace: 'activity',
+        ),
+        _readCachedSnapshotSafely(
+          cache: cache,
+          accountId: accountId,
+          namespace: 'contributions',
+        ),
+      ]);
+      final profileSnapshot = snapshots[0];
+      final repositoriesSnapshot = snapshots[1];
+      final activitySnapshot = snapshots[2];
+      final contributionsSnapshot = snapshots[3];
       final profile = await _decodeCachedSnapshot<DeveloperProfile>(
         cache: cache,
         accountId: accountId,

@@ -44,6 +44,26 @@ class DelayedWriteSnapshotStore extends LocalSnapshotStore {
   }
 }
 
+class FailingReadSnapshotStore extends LocalSnapshotStore {
+  FailingReadSnapshotStore(super.preferences);
+
+  @override
+  Future<LocalSnapshot?> read({
+    required String accountId,
+    required String namespace,
+    required int schemaVersion,
+  }) async {
+    if (namespace == 'activity') {
+      throw StateError('Simulated activity cache read failure');
+    }
+    return super.read(
+      accountId: accountId,
+      namespace: namespace,
+      schemaVersion: schemaVersion,
+    );
+  }
+}
+
 void main() {
   ProviderConnectionRecord connectedRecord({String username = 'octocat'}) {
     return ProviderConnectionRecord.connected(
@@ -395,6 +415,40 @@ void main() {
       expect(bloc.state.contributions?.total, 4);
       await bloc.close();
     });
+
+    test(
+      'one cache read failure does not hide valid cached profile',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final preferences = await SharedPreferences.getInstance();
+        final cache = FailingReadSnapshotStore(preferences);
+        await cache.write(
+          accountId: 'github:octocat',
+          namespace: 'profile',
+          payload: ProviderSnapshotCodec.encodeProfile(sampleProfile()),
+          schemaVersion: 1,
+        );
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          dataFailure: const NetworkUnavailable(),
+        );
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+          snapshotStoreFactory: () async => cache,
+        );
+
+        bloc.add(const IntegrationStarted());
+        await waitFor(
+          bloc,
+          (state) => state.isStale && !state.isBusy && state.failure != null,
+        );
+
+        expect(bloc.state.profile?.username, 'octocat');
+        expect(bloc.state.activities, isEmpty);
+        await bloc.close();
+      },
+    );
 
     test(
       'corrupt activity snapshot does not hide valid cached profile',
