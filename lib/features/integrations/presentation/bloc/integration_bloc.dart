@@ -213,6 +213,32 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     return '${record!.providerId}:$username';
   }
 
+  /// Clears persisted connection metadata and that account's cached data.
+  ///
+  /// [generation] prevents a delayed startup cleanup from erasing a newer
+  /// connection created while storage was being accessed.
+  Future<void> _clearPersistedConnection({int? generation}) async {
+    try {
+      final store = await _store();
+      if (generation != null && generation != _lifecycleGeneration) return;
+      final record = store.load();
+      final accountId = _accountCacheId(record);
+      if (accountId != null) {
+        try {
+          final cache = await _snapshotStoreFactory();
+          if (generation != null && generation != _lifecycleGeneration) return;
+          await cache.clearAccount(accountId);
+        } catch (_) {
+          // Cleanup is best-effort; stale metadata must still be removed.
+        }
+      }
+      if (generation != null && generation != _lifecycleGeneration) return;
+      await store.clear();
+    } catch (_) {
+      // Local persistence must never prevent the app from starting.
+    }
+  }
+
   /// Decode one snapshot independently so a single corrupt namespace cannot
   /// hide other valid cached data. Invalid entries are removed best-effort.
   Future<T?> _decodeCachedSnapshot<T>({
@@ -388,6 +414,8 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
       final connected = await provider.isConnected();
       if (generation != _lifecycleGeneration) return;
       if (!connected) {
+        await _clearPersistedConnection(generation: generation);
+        if (generation != _lifecycleGeneration) return;
         emit(const IntegrationState(phase: IntegrationPhase.disconnected));
         return;
       }
@@ -433,14 +461,20 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
       if (generation != _lifecycleGeneration) return;
       add(const IntegrationDataRefreshRequested());
     } on AuthorizationExpired {
-      // Token rejected: silently disconnect (clears stored state).
+      if (generation != _lifecycleGeneration) return;
+      // Token rejected during restore: remove persisted metadata and snapshots
+      // so a later launch cannot resurrect a disconnected account.
       try {
         await provider.disconnect();
       } catch (_) {}
+      await _clearPersistedConnection(generation: generation);
+      if (generation != _lifecycleGeneration) return;
       emit(const IntegrationState(phase: IntegrationPhase.disconnected));
     } on ProviderFailure catch (failure) {
+      if (generation != _lifecycleGeneration) return;
       emit(IntegrationState(phase: IntegrationPhase.error, failure: failure));
     } catch (e) {
+      if (generation != _lifecycleGeneration) return;
       emit(
         IntegrationState(
           phase: IntegrationPhase.error,
