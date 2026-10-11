@@ -40,6 +40,12 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
+      - name: Diagnose progression test formatting
+        shell: bash
+        run: |
+          dart format test/features/progress/presentation/bloc/intelligence_bloc_test.dart
+          git diff -- test/features/progress/presentation/bloc/intelligence_bloc_test.dart
+
       - name: Check Dart formatting
         run: dart format --output=none --set-exit-if-changed lib test
 
