@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -249,6 +250,62 @@ void main() {
               (failure) => failure.detail,
               'detail',
               contains('GITHUB_OAUTH_CLIENT_ID'),
+            ),
+          ),
+        );
+        expect(await provider.isConnected(), isFalse);
+      },
+    );
+
+    test(
+      'does not persist a token when cancelled while a poll is in flight',
+      () async {
+        final pollStarted = Completer<void>();
+        final pollResponse = Completer<http.Response>();
+        requests = [];
+        final client = MockClient((request) async {
+          requests.add(request);
+          if (request.url.path == '/login/device/code') {
+            return http.Response(
+              jsonEncode({
+                'device_code': 'device-1',
+                'user_code': 'WDJB-MJHT',
+                'verification_uri': 'https://github.com/login/device',
+                'expires_in': 900,
+                'interval': 1,
+              }),
+              200,
+            );
+          }
+          if (request.url.path == '/login/oauth/access_token') {
+            if (!pollStarted.isCompleted) pollStarted.complete();
+            return pollResponse.future;
+          }
+          return http.Response('not found', 404);
+        });
+        final tokenStore = GitHubTokenStore();
+        final provider = buildProvider(
+          client: client,
+          tokenStore: tokenStore,
+        );
+
+        final connecting = provider.connect();
+        await pollStarted.future;
+        provider.cancelAuthorization();
+        pollResponse.complete(
+          http.Response(
+            jsonEncode({'access_token': 'gho_cancelled_token'}),
+            200,
+          ),
+        );
+
+        await expectLater(
+          connecting,
+          throwsA(
+            isA<AuthenticationFailed>().having(
+              (failure) => failure.detail,
+              'detail',
+              contains('cancelled'),
             ),
           ),
         );
