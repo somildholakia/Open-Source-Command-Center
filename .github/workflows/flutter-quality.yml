@@ -40,9 +40,6 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
-      - name: Inspect auth service test formatting
-        run: dart format --output=show test/services/firebase/auth_service_test.dart
-
       - name: Check Dart formatting
         run: dart format --output=none --set-exit-if-changed lib test
 

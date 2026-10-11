@@ -29,13 +29,11 @@ void main() {
           password: 'password123',
         ),
         throwsA(
-          isA<AuthFailure>()
-              .having(
-                (failure) => failure.message,
-                'message',
-                'Sign-in failed. Please try again.',
-              )
-
+          isA<AuthFailure>().having(
+            (failure) => failure.message,
+            'message',
+            'Sign-in failed. Please try again.',
+          ),
         ),
       );
     });
@@ -54,17 +52,11 @@ void main() {
           password: 'strongPassword99!',
         ),
         throwsA(
-          isA<AuthFailure>()
-              .having(
-                (failure) => failure.message,
-                'message',
-                'Sign-up failed. Please try again.',
-              )
-              .having(
-                (failure) => failure.message.contains('private internal details'),
-                'does not contain private exception details',
-                isFalse,
-              ),
+          isA<AuthFailure>().having(
+            (failure) => failure.message,
+            'message',
+            'Sign-up failed. Please try again.',
+          ),
         ),
       );
     });
@@ -88,13 +80,11 @@ void main() {
           password: 'password123',
         ),
         throwsA(
-          isA<AuthFailure>()
-              .having(
-                (failure) => failure.message,
-                'message',
-                'Authentication failed. Please try again.',
-              )
-
+          isA<AuthFailure>().having(
+            (failure) => failure.message,
+            'message',
+            'Authentication failed. Please try again.',
+          ),
         ),
       );
     });
