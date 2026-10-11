@@ -47,8 +47,7 @@ class DashboardPage extends StatelessWidget {
                     if (state is AuthAuthenticated &&
                         state.user.uid == 'local-demo') {
                       return const SampleDataBanner(
-                        message:
-                            'Local preview only — no Firebase account is signed in. GitHub data depends on configuration.',
+                        message: 'Local preview only — no Firebase account is signed in. GitHub data depends on configuration.',
                       );
                     }
                     return const SizedBox.shrink();
