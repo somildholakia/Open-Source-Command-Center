@@ -41,11 +41,15 @@ class AttentionFeedPlaceholder extends StatelessWidget {
                 ),
               ),
               AppSpacing.hSpaceSm,
-              Text(
-                'NEEDS ATTENTION',
-                style: AppTypography.labelLarge.copyWith(
-                  color: colorScheme.onSurface,
-                  letterSpacing: 0.5,
+              Flexible(
+                child: Text(
+                  'NEEDS ATTENTION',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.labelLarge.copyWith(
+                    color: colorScheme.onSurface,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ],

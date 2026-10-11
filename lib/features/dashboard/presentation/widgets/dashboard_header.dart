@@ -55,12 +55,16 @@ class DashboardHeader extends StatelessWidget {
                     children: [
                       const _StatusDot(),
                       AppSpacing.hSpaceXs,
-                      Text(
-                        'COMMAND CENTER v0.1',
-                        style: AppTypography.captionMedium.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.0,
+                      Flexible(
+                        child: Text(
+                          'COMMAND CENTER v0.1',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.captionMedium.copyWith(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.0,
+                          ),
                         ),
                       ),
                     ],
@@ -186,11 +190,16 @@ class _XpProgressPanel extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Text(
-                    '${level.xpIntoLevel} / ${level.xpForNextLevel} XP',
-                    style: AppTypography.monoSmall.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w600,
+                  Flexible(
+                    child: Text(
+                      '${level.xpIntoLevel} / ${level.xpForNextLevel} XP',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: AppTypography.monoSmall.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],

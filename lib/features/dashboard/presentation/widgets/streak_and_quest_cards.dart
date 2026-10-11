@@ -249,11 +249,15 @@ class _DailyQuestCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '${quest.progress} / ${quest.target} completed',
-                    style: AppTypography.captionSmall.copyWith(
-                      color: colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.6,
+                  Expanded(
+                    child: Text(
+                      '${quest.progress} / ${quest.target} completed',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.captionSmall.copyWith(
+                        color: colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.6,
+                        ),
                       ),
                     ),
                   ),

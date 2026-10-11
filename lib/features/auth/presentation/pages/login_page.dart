@@ -337,58 +337,72 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildSocialButtons(bool isLoading) {
-    return Row(
-      children: [
-        Expanded(
-          child: _SocialButton(
-            icon: Icons.code,
-            label: 'GitHub',
-            color: AppColors.surfaceElevated,
-            textColor: AppColors.textPrimary,
-            isLoading: isLoading,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('GitHub OAuth coming in Phase 2'),
-                  backgroundColor: AppColors.infoAccent,
-                ),
-              );
-            },
+    final githubButton = _SocialButton(
+      icon: Icons.code,
+      label: 'GitHub',
+      color: AppColors.surfaceElevated,
+      textColor: AppColors.textPrimary,
+      isLoading: isLoading,
+      onPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('GitHub OAuth coming in Phase 2'),
+            backgroundColor: AppColors.infoAccent,
           ),
-        ),
-        AppSpacing.hSpaceMd,
-        Expanded(
-          child: _SocialButton(
-            icon: Icons.g_mobiledata_rounded,
-            label: 'Google',
-            color: AppColors.surfaceElevated,
-            textColor: AppColors.textPrimary,
-            iconSize: 32,
-            isLoading: isLoading,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Google OAuth coming soon'),
-                  backgroundColor: AppColors.infoAccent,
-                ),
-              );
-            },
+        );
+      },
+    );
+    final googleButton = _SocialButton(
+      icon: Icons.g_mobiledata_rounded,
+      label: 'Google',
+      color: AppColors.surfaceElevated,
+      textColor: AppColors.textPrimary,
+      iconSize: 32,
+      isLoading: isLoading,
+      onPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google OAuth coming soon'),
+            backgroundColor: AppColors.infoAccent,
           ),
-        ),
-      ],
+        );
+      },
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 360) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              githubButton,
+              SizedBox(height: AppSpacing.sm),
+              googleButton,
+            ],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: githubButton),
+            AppSpacing.hSpaceMd,
+            Expanded(child: googleButton),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildSignUpLink(bool isLoading) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: AppSpacing.xxs,
+      runSpacing: AppSpacing.xxs,
       children: [
-        Flexible(
-          child: Text(
-            'Don\'t have an account?',
-            style: AppTypography.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
+        Text(
+          'Don\\'t have an account?',
+          style: AppTypography.bodyMedium,
+          textAlign: TextAlign.center,
         ),
         TextButton(
           onPressed: isLoading ? null : () => context.push('/signup'),
