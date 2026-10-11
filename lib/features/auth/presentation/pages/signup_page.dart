@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/utils/email_validator.dart';
 import '../../../../core/widgets/cartoon_page_banner.dart';
 import '../../../../core/widgets/responsive_layout.dart';
 import '../bloc/auth.dart';
@@ -251,7 +252,7 @@ class _SignUpPageState extends State<SignUpPage> {
         if (value == null || value.trim().isEmpty) {
           return 'Email is required';
         }
-        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+        if (!EmailValidator.isValid(value)) {
           return 'Please enter a valid email address';
         }
         return null;
