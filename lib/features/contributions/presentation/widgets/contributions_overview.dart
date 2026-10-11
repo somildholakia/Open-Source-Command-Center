@@ -129,8 +129,11 @@ class ContributionsOverview extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Section header
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.xs,
           children: [
             Text('Overview', style: AppTypography.headingSmall),
             _buildBadge(),
@@ -145,7 +148,7 @@ class ContributionsOverview extends StatelessWidget {
           tabletColumns: 4,
           desktopColumns: 4,
           spacing: AppSpacing.sm,
-          childAspectRatio: 1.3,
+          childAspectRatio: MediaQuery.sizeOf(context).width < 360 ? 0.9 : 1.3,
           children: [
             for (final card in cards)
               ContributionStatCard(
