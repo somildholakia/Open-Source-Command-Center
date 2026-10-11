@@ -48,6 +48,7 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   late final GoRouter _router;
+  String? _lastConnectedAccountId;
 
   @override
   void initState() {
@@ -102,7 +103,28 @@ class _AppState extends State<App> {
           listenWhen: (previous, current) =>
               _intelligenceSourceChanged(previous, current),
           listener: (context, state) {
-            context.read<IntelligenceBloc>().add(_intelligenceSourceOf(state));
+            final intelligenceBloc = context.read<IntelligenceBloc>();
+            final currentAccountId = _accountIdOf(state);
+            final previousAccountId = _lastConnectedAccountId;
+
+            if (state.phase == IntegrationPhase.disconnected) {
+              if (previousAccountId != null) {
+                intelligenceBloc.add(
+                  IntelligenceAccountDisconnected(previousAccountId),
+                );
+              }
+              _lastConnectedAccountId = null;
+            } else if (currentAccountId != null) {
+              if (previousAccountId != null &&
+                  previousAccountId != currentAccountId) {
+                intelligenceBloc.add(
+                  IntelligenceAccountDisconnected(previousAccountId),
+                );
+              }
+              _lastConnectedAccountId = currentAccountId;
+            }
+
+            intelligenceBloc.add(_intelligenceSourceOf(state));
           },
           child: ValueListenableBuilder<ThemeMode>(
             valueListenable: ThemePreference.notifier,

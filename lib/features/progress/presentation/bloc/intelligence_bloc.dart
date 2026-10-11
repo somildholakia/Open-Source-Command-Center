@@ -71,6 +71,16 @@ class IntelligenceProgressionResetRequested extends IntelligenceEvent {
   const IntelligenceProgressionResetRequested();
 }
 
+/// The provider account was disconnected or replaced by another account.
+///
+/// Persisted progression history is account-scoped and should not remain on a
+/// shared device after the user disconnects that account.
+class IntelligenceAccountDisconnected extends IntelligenceEvent {
+  final String accountId;
+
+  const IntelligenceAccountDisconnected(this.accountId);
+}
+
 /// Developer progression resolved from the source data.
 class IntelligenceState extends Equatable {
   /// Deterministic intelligence; never null. Zeroed while there is no data.
@@ -184,6 +194,7 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
       super(IntelligenceState.empty()) {
     on<IntelligenceSourceChanged>(_onSourceChanged);
     on<IntelligenceProgressionResetRequested>(_onProgressionResetRequested);
+    on<IntelligenceAccountDisconnected>(_onAccountDisconnected);
   }
 
   ProgressionRecord _progressionFor(String accountId) {
@@ -258,6 +269,23 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
   bool _hasNewProgression(DeveloperIntelligence intelligence) =>
       intelligence.newlyUnlockedAchievementIds.isNotEmpty ||
       intelligence.newlyCompletedQuestKeys.isNotEmpty;
+
+  Future<void> _onAccountDisconnected(
+    IntelligenceAccountDisconnected event,
+    Emitter<IntelligenceState> _,
+  ) async {
+    // Invalidate a refresh/source event still writing the disconnected
+    // account's history. This event intentionally does not recompute derived
+    // achievements, because the account is no longer connected.
+    ++_sourceGeneration;
+    _progressionByAccount.remove(event.accountId);
+    try {
+      await _store.clear(event.accountId);
+    } catch (_) {
+      // Best-effort cleanup must not block the connection lifecycle.
+    }
+    _progressionByAccount.remove(event.accountId);
+  }
 
   Future<void> _onProgressionResetRequested(
     IntelligenceProgressionResetRequested event,

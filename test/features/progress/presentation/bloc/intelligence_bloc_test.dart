@@ -350,6 +350,52 @@ void main() {
     });
   });
 
+  group('account disconnect', () {
+    test(
+      'clears one account history without affecting the active account',
+      () async {
+        final store = InMemoryProgressionStore();
+        await store.save(
+          'github:octocat',
+          ProgressionRecord.empty.withAchievement(
+            'first_merge',
+            DateTime.utc(2026, 9, 1),
+          ),
+        );
+        await store.save(
+          'github:mona',
+          ProgressionRecord.empty.withAchievement(
+            'ten_merges',
+            DateTime.utc(2026, 9, 2),
+          ),
+        );
+
+        final bloc = IntelligenceBloc(store, clock: () => now);
+        bloc.add(
+          connectedSource(
+            accountId: 'github:mona',
+            withContributions: null,
+          ),
+        );
+        await waitFor(bloc, (state) => state.accountId == 'github:mona');
+
+        bloc.add(const IntelligenceAccountDisconnected('github:octocat'));
+        await waitFor(
+          bloc,
+          (_) => store.load('github:octocat') == ProgressionRecord.empty,
+        );
+
+        expect(bloc.state.accountId, 'github:mona');
+        expect(
+          store.load('github:mona').isAchievementUnlocked('ten_merges'),
+          isTrue,
+        );
+
+        await bloc.close();
+      },
+    );
+  });
+
   group('reset', () {
     test('forgets stored history but keeps derived achievements', () async {
       final store = InMemoryProgressionStore();
