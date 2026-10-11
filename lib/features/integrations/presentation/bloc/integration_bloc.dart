@@ -176,6 +176,7 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
   final Future<ConnectionStore> Function() _storeFactory;
   final Future<LocalSnapshotStore> Function() _snapshotStoreFactory;
   static const int _snapshotSchemaVersion = 1;
+  int _lifecycleGeneration = 0;
 
   IntegrationBloc({
     required this.provider,
@@ -236,8 +237,9 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
 
   Future<void> _restoreCachedData(
     ProviderConnectionRecord record,
-    Emitter<IntegrationState> emit,
-  ) async {
+    Emitter<IntegrationState> emit, {
+    required int generation,
+  }) async {
     final accountId = _accountCacheId(record);
     if (accountId == null) return;
     try {
@@ -297,6 +299,7 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
           contributionsSnapshot!.payload,
         ),
       );
+      if (generation != _lifecycleGeneration) return;
       if (profile != null ||
           repositories != null ||
           activities != null ||
@@ -378,16 +381,19 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     IntegrationStarted event,
     Emitter<IntegrationState> emit,
   ) async {
+    final generation = ++_lifecycleGeneration;
     emit(const IntegrationState(phase: IntegrationPhase.unknown));
 
     try {
       final connected = await provider.isConnected();
+      if (generation != _lifecycleGeneration) return;
       if (!connected) {
         emit(const IntegrationState(phase: IntegrationPhase.disconnected));
         return;
       }
 
       final store = await _store();
+      if (generation != _lifecycleGeneration) return;
       final record = store.load();
       if (record != null) {
         emit(
@@ -396,13 +402,15 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
             connection: record,
           ),
         );
-        await _restoreCachedData(record, emit);
+        await _restoreCachedData(record, emit, generation: generation);
+        if (generation != _lifecycleGeneration) return;
         add(const IntegrationDataRefreshRequested());
         return;
       }
 
       // Token exists but no record: rebuild it from the profile.
       final profile = await provider.fetchProfile();
+      if (generation != _lifecycleGeneration) return;
       final rebuilt = ProviderConnectionRecord.connected(
         providerId: provider.providerId,
         account: ConnectedAccount(
@@ -414,13 +422,15 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
         ),
       );
       await store.save(rebuilt);
+      if (generation != _lifecycleGeneration) return;
       emit(
         IntegrationState(
           phase: IntegrationPhase.connected,
           connection: rebuilt,
         ),
       );
-      await _restoreCachedData(rebuilt, emit);
+      await _restoreCachedData(rebuilt, emit, generation: generation);
+      if (generation != _lifecycleGeneration) return;
       add(const IntegrationDataRefreshRequested());
     } on AuthorizationExpired {
       // Token rejected: silently disconnect (clears stored state).
@@ -444,42 +454,50 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     IntegrationConnectRequested event,
     Emitter<IntegrationState> emit,
   ) async {
-    emit(
-      state.copyWith(
-        phase: IntegrationPhase.connecting,
-        prompt: null,
-        clearFailure: true,
-      ),
-    );
+    final generation = ++_lifecycleGeneration;
+    // Never display the previous account's data while a different account is
+    // being authorized.
+    emit(const IntegrationState(phase: IntegrationPhase.connecting));
 
     try {
       final result = await provider.connect(
         onPrompt: (prompt) {
-          if (state.phase == IntegrationPhase.connecting) {
+          if (generation == _lifecycleGeneration &&
+              state.phase == IntegrationPhase.connecting) {
             emit(state.copyWith(prompt: prompt));
           }
         },
       );
 
+      if (generation != _lifecycleGeneration) {
+        await provider.disconnect();
+        return;
+      }
       final record = ProviderConnectionRecord.connected(
         providerId: provider.providerId,
         account: result.account,
       );
       final store = await _store();
+      if (generation != _lifecycleGeneration) {
+        await provider.disconnect();
+        return;
+      }
       await store.save(record);
+      if (generation != _lifecycleGeneration) return;
 
       emit(
         IntegrationState(
           phase: IntegrationPhase.connected,
           connection: record,
           profile: result.profile,
-          repositories: state.repositories,
-          activities: state.activities,
-          contributions: state.contributions,
+          repositories: const [],
+          activities: const [],
+          contributions: null,
         ),
       );
       add(const IntegrationDataRefreshRequested());
     } on ProviderFailure catch (failure) {
+      if (generation != _lifecycleGeneration) return;
       final cancelled =
           failure is AuthenticationFailed &&
           (failure.detail?.contains('cancelled') ?? false);
@@ -492,6 +510,7 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
         ),
       );
     } catch (e) {
+      if (generation != _lifecycleGeneration) return;
       emit(
         IntegrationState(
           phase: IntegrationPhase.error,
@@ -512,6 +531,7 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     IntegrationDisconnectRequested event,
     Emitter<IntegrationState> emit,
   ) async {
+    ++_lifecycleGeneration;
     final accountId = _accountCacheId(state.connection);
     if (accountId != null) {
       try {
@@ -519,6 +539,11 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
       } catch (_) {
         // Disconnect must still complete when local cache cleanup fails.
       }
+    }
+    try {
+      await (await _store()).clear();
+    } catch (_) {
+      // Local metadata must not prevent the disconnect.
     }
     try {
       await provider.disconnect();
@@ -536,6 +561,8 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     // API calls from widget rebuilds).
     if (state.isBusy) return;
     if (state.phase != IntegrationPhase.connected) return;
+    final generation = _lifecycleGeneration;
+    final accountId = _accountCacheId(state.connection);
 
     final hadData =
         state.profile != null ||
@@ -560,6 +587,12 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
       _safe(() => provider.fetchActivity()),
       _safe(() => provider.fetchContributions()),
     ]);
+    if (generation != _lifecycleGeneration ||
+        state.phase != IntegrationPhase.connected ||
+        _accountCacheId(state.connection) != accountId) {
+      return;
+    }
+
     final profile = results[0];
     final repositories = results[1];
     final activities = results[2];
@@ -638,6 +671,7 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     IntegrationResetRequested event,
     Emitter<IntegrationState> emit,
   ) async {
+    ++_lifecycleGeneration;
     // Signing out must not leave the previous account's cached provider data
     // on a shared device. Clear only the active account's snapshots.
     final accountId = _accountCacheId(state.connection);
@@ -648,6 +682,9 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
         // A local-storage failure must not prevent sign-out.
       }
     }
+    try {
+      await (await _store()).clear();
+    } catch (_) {}
     try {
       await provider.disconnect();
     } catch (_) {}
