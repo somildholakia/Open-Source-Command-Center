@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +9,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/cartoon_page_banner.dart';
 import '../../../../core/widgets/responsive_layout.dart';
+import '../../../../services/firebase/firebase_service.dart';
 import '../bloc/auth.dart';
 
 /// Login page for existing users.
@@ -146,6 +148,30 @@ class _LoginPageState extends State<LoginPage> {
                   ),
 
                   AppSpacing.vSpaceXl,
+
+                  // A debug-only local entry point keeps the UI inspectable
+                  // when this build intentionally has no Firebase config.
+                  if (kDebugMode && !FirebaseService.instance.isInitialized) ...[
+                    OutlinedButton.icon(
+                      onPressed: isLoading
+                          ? null
+                          : () => context.read<AuthBloc>().add(
+                              const AuthDemoSessionRequested(),
+                            ),
+                      icon: const Icon(Icons.visibility_rounded),
+                      label: const Text('Preview app (local demo)'),
+                    ),
+                    AppSpacing.vSpaceXs,
+                    Text(
+                      'Debug preview only. Firebase sign-in and live GitHub sync '
+                      'need configuration.',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.captionSmall.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    AppSpacing.vSpaceMd,
+                  ],
 
                   // Divider
                   _buildDivider(),

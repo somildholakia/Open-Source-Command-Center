@@ -49,6 +49,7 @@ class App extends StatefulWidget {
 class _AppState extends State<App> {
   late final GoRouter _router;
   String? _lastConnectedAccountId;
+  bool _demoSessionActive = false;
 
   @override
   void initState() {
@@ -90,11 +91,21 @@ class _AppState extends State<App> {
         listener: (context, state) {
           final integration = context.read<IntegrationBloc>();
           if (state is AuthAuthenticated) {
-            // Restore any stored GitHub connection for this session.
-            integration.add(const IntegrationStarted());
+            if (state.user.uid == 'local-demo') {
+              // The local preview must not load or mutate a real GitHub session.
+              _demoSessionActive = true;
+            } else {
+              _demoSessionActive = false;
+              integration.add(const IntegrationStarted());
+            }
           } else if (state is AuthUnauthenticated) {
-            // Drop in-memory connection state on sign-out.
-            integration.add(const IntegrationResetRequested());
+            if (_demoSessionActive) {
+              // Leaving preview mode must not disconnect a separately stored
+              // GitHub account or erase its cached data.
+              _demoSessionActive = false;
+            } else {
+              integration.add(const IntegrationResetRequested());
+            }
           }
         },
         child: BlocListener<IntegrationBloc, IntegrationState>(

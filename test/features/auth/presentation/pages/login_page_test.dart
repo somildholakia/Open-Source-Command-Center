@@ -26,6 +26,24 @@ void main() {
   }
 
   group('LoginPage UI Tests', () {
+    testWidgets('offers a local preview when Firebase is not configured', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Preview app (local demo)'), findsOneWidget);
+      expect(
+        find.textContaining('Debug preview only'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('renders all essential login elements', (
       WidgetTester tester,
     ) async {

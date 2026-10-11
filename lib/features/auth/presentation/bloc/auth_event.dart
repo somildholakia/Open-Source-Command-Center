@@ -13,6 +13,11 @@ class AuthCheckRequested extends AuthEvent {
   const AuthCheckRequested();
 }
 
+/// User requested a local-only preview session in an unconfigured debug build.
+class AuthDemoSessionRequested extends AuthEvent {
+  const AuthDemoSessionRequested();
+}
+
 /// User requested to sign in with email and password.
 class AuthSignInRequested extends AuthEvent {
   final String email;

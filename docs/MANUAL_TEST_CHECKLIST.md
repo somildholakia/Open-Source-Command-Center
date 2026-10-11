@@ -20,6 +20,7 @@ Do not paste Firebase configuration, client secrets, access tokens, or signing k
 
 ## Authentication and settings
 
+- [ ] If this debug APK has no Firebase configuration, choose **Preview app (local demo)** to inspect navigation, layouts, themes, and empty states. This is a temporary local preview only; it does not authenticate with Firebase or enable live GitHub sync.
 - [ ] Sign in with a valid Firebase email/password account.
 - [ ] Confirm invalid credentials and invalid form input show readable errors.
 - [ ] Request a password-reset email and confirm the UI reports success only when the request succeeds.

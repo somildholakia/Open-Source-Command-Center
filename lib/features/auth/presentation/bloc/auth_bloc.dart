@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/utils/email_validator.dart';
+import '../../data/models/user_model.dart';
 import '../../../../services/firebase/auth_service.dart';
+import '../../../../services/firebase/firebase_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -16,6 +19,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     : _authService = authService ?? AuthService.instance,
       super(const AuthInitial()) {
     on<AuthCheckRequested>(_onAuthCheckRequested);
+    on<AuthDemoSessionRequested>(_onDemoSessionRequested);
     on<AuthSignInRequested>(_onAuthSignInRequested);
     on<AuthSignUpRequested>(_onAuthSignUpRequested);
     on<AuthSignOutRequested>(_onAuthSignOutRequested);
@@ -37,6 +41,36 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } else {
       emit(const AuthUnauthenticated());
     }
+  }
+
+  /// Allows visual/manual UI testing when Firebase isn't configured.
+  ///
+  /// This path is compiled into debug builds only and is rejected whenever
+  /// Firebase is initialized. It never creates a Firebase account.
+  void _onDemoSessionRequested(
+    AuthDemoSessionRequested event,
+    Emitter<AuthState> emit,
+  ) {
+    if (!kDebugMode || FirebaseService.instance.isInitialized) {
+      emit(
+        const AuthError(
+          message:
+              'Local preview is only available in debug builds without Firebase.',
+          type: AuthErrorType.unknown,
+        ),
+      );
+      return;
+    }
+
+    emit(
+      const AuthAuthenticated(
+        user: UserModel(
+          uid: 'local-demo',
+          email: 'demo@local.dev',
+          displayName: 'Demo Developer',
+        ),
+      ),
+    );
   }
 
   /// Handle sign in request with email/password.

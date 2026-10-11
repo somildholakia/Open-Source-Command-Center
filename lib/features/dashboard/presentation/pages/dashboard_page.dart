@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/responsive_layout.dart';
 import '../../../../core/widgets/cartoon_welcome_banner.dart';
+import '../../../../core/widgets/sample_data_banner.dart';
+import '../../../auth/presentation/bloc/auth.dart';
 import '../../../integrations/presentation/widgets/cached_data_notice.dart';
 import '../widgets/attention_feed_placeholder.dart';
 import '../widgets/dashboard_header.dart';
@@ -39,6 +42,18 @@ class DashboardPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const CartoonWelcomeBanner(),
+                BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) {
+                    if (state is AuthAuthenticated &&
+                        state.user.uid == 'local-demo') {
+                      return const SampleDataBanner(
+                        message:
+                            'Local preview only — Firebase sign-in and live GitHub data are not enabled.',
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
                 AppSpacing.vSpaceLg,
                 const CachedDataNotice(),
 
