@@ -29,7 +29,7 @@ class GitHubTokenStore {
   /// Whether a token exists in secure storage.
   Future<bool> hasToken() async {
     try {
-      return await _storage.containsKey(key: _key);
+      return await _storage.containsKey(key: _key) || _memoryFallback != null;
     } catch (_) {
       return _memoryFallback != null;
     }
@@ -38,7 +38,7 @@ class GitHubTokenStore {
   /// Reads the token, or an empty string when absent/unavailable.
   Future<String> read() async {
     try {
-      return await _storage.read(key: _key) ?? '';
+      return await _storage.read(key: _key) ?? _memoryFallback ?? '';
     } catch (_) {
       return _memoryFallback ?? '';
     }
@@ -48,6 +48,7 @@ class GitHubTokenStore {
   Future<void> write(String token) async {
     try {
       await _storage.write(key: _key, value: token);
+      _memoryFallback = null;
     } catch (_) {
       _memoryFallback = token;
     }
