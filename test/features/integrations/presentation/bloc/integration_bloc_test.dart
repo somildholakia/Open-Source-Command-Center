@@ -10,6 +10,40 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../support/fake_developer_provider.dart';
 import '../../../../support/in_memory_connection_store.dart';
 
+class DelayedWriteSnapshotStore extends LocalSnapshotStore {
+  DelayedWriteSnapshotStore(super.preferences);
+
+  bool delayNextWrite = false;
+  final writeStarted = Completer<void>();
+  final releaseWrite = Completer<void>();
+  final delayedWriteCompleted = Completer<void>();
+
+  @override
+  Future<void> write({
+    required String accountId,
+    required String namespace,
+    required Map<String, dynamic> payload,
+    required int schemaVersion,
+    DateTime? cachedAt,
+  }) async {
+    if (delayNextWrite) {
+      delayNextWrite = false;
+      writeStarted.complete();
+      await releaseWrite.future;
+    }
+    await super.write(
+      accountId: accountId,
+      namespace: namespace,
+      payload: payload,
+      schemaVersion: schemaVersion,
+      cachedAt: cachedAt,
+    );
+    if (writeStarted.isCompleted && !delayedWriteCompleted.isCompleted) {
+      delayedWriteCompleted.complete();
+    }
+  }
+}
+
 void main() {
   ProviderConnectionRecord connectedRecord({String username = 'octocat'}) {
     return ProviderConnectionRecord.connected(
@@ -568,6 +602,67 @@ void main() {
         expect(bloc.state.phase, IntegrationPhase.disconnected);
         expect(bloc.state.connection, isNull);
         expect(store.record, isNull);
+        await bloc.close();
+      },
+    );
+
+    test(
+      'does not restore snapshots or connection metadata when a cache write '
+      'finishes after disconnect',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final preferences = await SharedPreferences.getInstance();
+        final cache = DelayedWriteSnapshotStore(preferences);
+        final store = InMemoryConnectionStore(connectedRecord());
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          profile: sampleProfile(),
+          repositories: [sampleRepository()],
+          activities: [sampleActivity()],
+        );
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => store,
+          snapshotStoreFactory: () async => cache,
+        );
+
+        bloc.add(const IntegrationStarted());
+        await waitFor(bloc, (state) => !state.isBusy && state.profile != null);
+
+        cache.delayNextWrite = true;
+        bloc.add(const IntegrationDataRefreshRequested());
+        await cache.writeStarted.future;
+
+        bloc.add(const IntegrationDisconnectRequested());
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.disconnected,
+        );
+        expect(store.record, isNull);
+
+        cache.releaseWrite.complete();
+        await cache.delayedWriteCompleted.future;
+        for (var i = 0; i < 50; i++) {
+          final snapshot = await cache.read(
+            accountId: 'github:octocat',
+            namespace: 'profile',
+            schemaVersion: 1,
+          );
+          if (snapshot == null) break;
+          await Future<void>.delayed(Duration.zero);
+        }
+
+        expect(bloc.state.phase, IntegrationPhase.disconnected);
+        expect(bloc.state.connection, isNull);
+        expect(store.record, isNull);
+        expect(
+          await cache.read(
+            accountId: 'github:octocat',
+            namespace: 'profile',
+            schemaVersion: 1,
+          ),
+          isNull,
+        );
         await bloc.close();
       },
     );

@@ -347,8 +347,41 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     }
   }
 
+  bool _isRefreshCurrent(int generation, String? accountId) =>
+      generation == _lifecycleGeneration &&
+      state.phase == IntegrationPhase.connected &&
+      _accountCacheId(state.connection) == accountId;
+
+  /// Reconciles persistence after a refresh loses a race with disconnect or
+  /// account switching. A completed async write must not resurrect old state.
+  Future<void> _reconcileStaleRefreshPersistence(String? accountId) async {
+    if (state.phase == IntegrationPhase.disconnected && accountId != null) {
+      try {
+        await (await _snapshotStoreFactory()).clearAccount(accountId);
+      } catch (_) {}
+    }
+
+    try {
+      final store = await _store();
+      final current = state;
+      if (current.phase == IntegrationPhase.disconnected) {
+        await store.clear();
+      } else if (current.phase == IntegrationPhase.connected &&
+          current.connection != null) {
+        await store.save(current.connection!);
+      } else if (current.phase == IntegrationPhase.connecting &&
+          _accountCacheId(store.load()) == accountId) {
+        // Remove only the stale record; do not clear a newer account's record.
+        await store.clear();
+      }
+    } catch (_) {
+      // Reconciliation is best-effort and must not block the UI lifecycle.
+    }
+  }
+
   Future<void> _persistSuccessfulSnapshots(
     IntegrationState previous, {
+    required int generation,
     required Object? profile,
     required Object? repositories,
     required Object? activities,
@@ -358,6 +391,20 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     if (accountId == null) return;
     try {
       final cache = await _snapshotStoreFactory();
+
+      Future<bool> stopIfStale() async {
+        if (_isRefreshCurrent(generation, accountId)) return false;
+        // A write may have completed after disconnect's first cleanup pass.
+        if (generation != _lifecycleGeneration &&
+            state.phase == IntegrationPhase.disconnected) {
+          try {
+            await cache.clearAccount(accountId);
+          } catch (_) {}
+        }
+        return true;
+      }
+
+      if (await stopIfStale()) return;
       if (profile is DeveloperProfile) {
         await cache.write(
           accountId: accountId,
@@ -365,6 +412,7 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
           payload: ProviderSnapshotCodec.encodeProfile(profile),
           schemaVersion: _snapshotSchemaVersion,
         );
+        if (await stopIfStale()) return;
       }
       if (repositories is List<Repository>) {
         await cache.write(
@@ -375,6 +423,7 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
           },
           schemaVersion: _snapshotSchemaVersion,
         );
+        if (await stopIfStale()) return;
       }
       if (activities is List<DeveloperActivity>) {
         await cache.write(
@@ -385,6 +434,7 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
           },
           schemaVersion: _snapshotSchemaVersion,
         );
+        if (await stopIfStale()) return;
       }
       if (contributions is ContributionSummary) {
         await cache.write(
@@ -393,6 +443,7 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
           payload: ProviderSnapshotCodec.encodeContributions(contributions),
           schemaVersion: _snapshotSchemaVersion,
         );
+        await stopIfStale();
       }
     } catch (_) {
       // Caching is best-effort; storage failure must not block live data.
@@ -665,16 +716,25 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
 
     await _persistSuccessfulSnapshots(
       state,
+      generation: generation,
       profile: profile,
       repositories: repositories,
       activities: activities,
       contributions: contributions,
     );
+    if (!_isRefreshCurrent(generation, accountId)) {
+      await _reconcileStaleRefreshPersistence(accountId);
+      return;
+    }
 
     if (failure == null && updatedRecord != null) {
       try {
         await (await _store()).save(updatedRecord);
       } catch (_) {}
+      if (!_isRefreshCurrent(generation, accountId)) {
+        await _reconcileStaleRefreshPersistence(accountId);
+        return;
+      }
     }
 
     emit(
