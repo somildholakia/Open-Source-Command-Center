@@ -3,8 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:opensource_command_center/services/github/github_token_store.dart';
 
-class _MockFlutterSecureStorage extends Mock
-    implements FlutterSecureStorage {}
+class _MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
 void main() {
   group('GitHubTokenStore memory fallback', () {
