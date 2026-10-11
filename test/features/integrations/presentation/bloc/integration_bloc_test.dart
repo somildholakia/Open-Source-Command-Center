@@ -272,6 +272,71 @@ void main() {
       await bloc.close();
     });
 
+    test(
+      'an oversized repository snapshot does not block other cache namespaces',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final preferences = await SharedPreferences.getInstance();
+        final cache = LocalSnapshotStore(preferences);
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          profile: sampleProfile(),
+          repositories: [
+            sampleRepository(
+              description: 'x' * (LocalSnapshotStore.maxSnapshotBytes + 1),
+            ),
+          ],
+          activities: [sampleActivity()],
+          contributions: ContributionSummary(
+            dailyCounts: const {'2026-10-01': 4},
+            fetchedAt: DateTime(2026, 10, 1),
+          ),
+        );
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+          snapshotStoreFactory: () async => cache,
+        );
+
+        bloc.add(const IntegrationStarted());
+        await waitFor(bloc, (state) => !state.isBusy && state.profile != null);
+
+        expect(
+          await cache.read(
+            accountId: 'github:octocat',
+            namespace: 'profile',
+            schemaVersion: 1,
+          ),
+          isNotNull,
+        );
+        expect(
+          await cache.read(
+            accountId: 'github:octocat',
+            namespace: 'repositories',
+            schemaVersion: 1,
+          ),
+          isNull,
+        );
+        expect(
+          await cache.read(
+            accountId: 'github:octocat',
+            namespace: 'activity',
+            schemaVersion: 1,
+          ),
+          isNotNull,
+        );
+        expect(
+          await cache.read(
+            accountId: 'github:octocat',
+            namespace: 'contributions',
+            schemaVersion: 1,
+          ),
+          isNotNull,
+        );
+        await bloc.close();
+      },
+    );
+
     test('restores cached data and keeps it when refresh is offline', () async {
       SharedPreferences.setMockInitialValues({});
       final preferences = await SharedPreferences.getInstance();

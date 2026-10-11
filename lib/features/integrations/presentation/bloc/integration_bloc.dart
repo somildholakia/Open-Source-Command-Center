@@ -421,46 +421,57 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
         return true;
       }
 
-      if (await stopIfStale()) return;
+      Future<bool> writeSnapshot({
+        required String namespace,
+        required Map<String, dynamic> payload,
+      }) async {
+        if (await stopIfStale()) return true;
+        // Each namespace is best-effort independently. An oversized or
+        // malformed snapshot must not prevent other valid data from caching.
+        try {
+          await cache.write(
+            accountId: accountId,
+            namespace: namespace,
+            payload: payload,
+            schemaVersion: _snapshotSchemaVersion,
+          );
+        } catch (_) {}
+        return stopIfStale();
+      }
+
       if (profile is DeveloperProfile) {
-        await cache.write(
-          accountId: accountId,
+        if (await writeSnapshot(
           namespace: 'profile',
           payload: ProviderSnapshotCodec.encodeProfile(profile),
-          schemaVersion: _snapshotSchemaVersion,
-        );
-        if (await stopIfStale()) return;
+        )) {
+          return;
+        }
       }
       if (repositories is List<Repository>) {
-        await cache.write(
-          accountId: accountId,
+        if (await writeSnapshot(
           namespace: 'repositories',
           payload: {
             'items': ProviderSnapshotCodec.encodeRepositories(repositories),
           },
-          schemaVersion: _snapshotSchemaVersion,
-        );
-        if (await stopIfStale()) return;
+        )) {
+          return;
+        }
       }
       if (activities is List<DeveloperActivity>) {
-        await cache.write(
-          accountId: accountId,
+        if (await writeSnapshot(
           namespace: 'activity',
           payload: {
             'items': ProviderSnapshotCodec.encodeActivities(activities),
           },
-          schemaVersion: _snapshotSchemaVersion,
-        );
-        if (await stopIfStale()) return;
+        )) {
+          return;
+        }
       }
       if (contributions is ContributionSummary) {
-        await cache.write(
-          accountId: accountId,
+        await writeSnapshot(
           namespace: 'contributions',
           payload: ProviderSnapshotCodec.encodeContributions(contributions),
-          schemaVersion: _snapshotSchemaVersion,
         );
-        await stopIfStale();
       }
     } catch (_) {
       // Caching is best-effort; storage failure must not block live data.

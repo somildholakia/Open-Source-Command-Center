@@ -11,6 +11,7 @@ import 'domain/domain.dart';
 import 'features/integrations/presentation/bloc/integration_bloc.dart';
 import 'features/progress/presentation/bloc/intelligence_bloc.dart';
 import 'services/firebase/auth_service.dart';
+import 'services/firebase/firebase_service.dart';
 import 'services/github/github_provider.dart';
 import 'services/progression/progression_store.dart';
 
@@ -99,9 +100,10 @@ class _AppState extends State<App> {
               integration.add(const IntegrationStarted());
             }
           } else if (state is AuthUnauthenticated) {
-            if (_demoSessionActive) {
-              // Leaving preview mode must not disconnect a separately stored
-              // GitHub account or erase its cached data.
+            if (_demoSessionActive ||
+                !FirebaseService.instance.isInitialized) {
+              // A local preview or unavailable Firebase setup has no Firebase
+              // session whose sign-out should erase a stored GitHub connection.
               _demoSessionActive = false;
             } else {
               integration.add(const IntegrationResetRequested());

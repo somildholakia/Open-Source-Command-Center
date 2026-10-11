@@ -46,7 +46,7 @@ void main() {
     test(
       'starts a local preview session when Firebase is unavailable',
       () async {
-        expectLater(
+        final expectation = expectLater(
           authBloc.stream,
           emits(
             isA<AuthAuthenticated>().having(
@@ -58,6 +58,7 @@ void main() {
         );
 
         authBloc.add(const AuthDemoSessionRequested());
+        await expectation;
       },
     );
 
