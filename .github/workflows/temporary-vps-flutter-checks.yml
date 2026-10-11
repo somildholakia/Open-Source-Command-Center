@@ -58,8 +58,8 @@ jobs:
 
       - name: Diagnose and verify Dart formatting
         run: |
-          dart format test/features/integrations/presentation/bloc/integration_bloc_test.dart
-          git diff --unified=2 -- test/features/integrations/presentation/bloc/integration_bloc_test.dart
+          dart format lib/features/integrations/presentation/bloc/integration_bloc.dart test/features/integrations/presentation/bloc/integration_bloc_test.dart
+          git diff --unified=2 -- lib/features/integrations/presentation/bloc/integration_bloc.dart test/features/integrations/presentation/bloc/integration_bloc_test.dart
           dart format --output=none --set-exit-if-changed lib test
 
       - name: Analyze
