@@ -908,5 +908,50 @@ void main() {
       );
       await bloc.close();
     });
+
+    test(
+      'reset clears persisted account snapshots when sign-out races startup',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final preferences = await SharedPreferences.getInstance();
+        final cache = LocalSnapshotStore(preferences);
+        await cache.write(
+          accountId: 'github:octocat',
+          namespace: 'profile',
+          payload: ProviderSnapshotCodec.encodeProfile(sampleProfile()),
+          schemaVersion: 1,
+        );
+        final store = InMemoryConnectionStore(connectedRecord());
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          profile: sampleProfile(),
+        );
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => store,
+          snapshotStoreFactory: () async => cache,
+        );
+
+        // Queue sign-out before startup has restored the persisted record into
+        // IntegrationState, leaving state.connection temporarily null.
+        bloc.add(const IntegrationStarted());
+        bloc.add(const IntegrationResetRequested());
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.disconnected,
+        );
+
+        expect(store.record, isNull);
+        expect(
+          await cache.read(
+            accountId: 'github:octocat',
+            namespace: 'profile',
+            schemaVersion: 1,
+          ),
+          isNull,
+        );
+        await bloc.close();
+      },
+    );
   });
 }
