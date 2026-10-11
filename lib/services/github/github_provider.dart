@@ -39,6 +39,9 @@ class GitHubProvider implements DeveloperProvider {
   /// Set when the user cancels an in-flight authorization.
   bool _authorizationCancelled = false;
 
+  /// Invalidates asynchronous authorization work after cancel/disconnect.
+  int _authorizationGeneration = 0;
+
   /// [httpClient] is shared by the device-flow client and the API client and
   /// is injectable so the whole flow can be exercised without a network.
   GitHubProvider({
@@ -85,9 +88,11 @@ class GitHubProvider implements DeveloperProvider {
     void Function(ConnectionPrompt prompt)? onPrompt,
   }) async {
     _authorizationCancelled = false;
+    final generation = ++_authorizationGeneration;
 
     // Step 1: request a device + user code.
     final start = await _deviceFlow.start();
+    _ensureAuthorizationCurrent(generation);
     onPrompt?.call(
       ConnectionPrompt(
         instructions:
@@ -102,6 +107,7 @@ class GitHubProvider implements DeveloperProvider {
     var interval = Duration(seconds: start.intervalSeconds);
     DeviceFlowToken? token;
     while (token == null) {
+      _ensureAuthorizationCurrent(generation);
       if (_authorizationCancelled) {
         throw const AuthenticationFailed(detail: 'Authorization cancelled.');
       }
@@ -117,6 +123,9 @@ class GitHubProvider implements DeveloperProvider {
           interval += const Duration(seconds: 5);
         },
       );
+      // Cancellation may arrive while the network poll is in flight. Never
+      // accept a token from a poll that outlived the authorization request.
+      _ensureAuthorizationCurrent(generation);
       if (token == null) {
         await Future<void>.delayed(interval);
       }
@@ -124,9 +133,16 @@ class GitHubProvider implements DeveloperProvider {
 
     // Step 3: store the token securely + link to Firebase (best effort).
     await _tokenStore.write(token.accessToken);
+    if (!_isAuthorizationCurrent(generation)) {
+      // A disconnect can race with secure-storage I/O. Remove any token that
+      // this now-stale authorization may have written after disconnect began.
+      if (_authorizationCancelled) await _tokenStore.clear();
+      throw const AuthenticationFailed(detail: 'Authorization cancelled.');
+    }
     _accessToken = token.accessToken;
 
     final profile = await fetchProfile();
+    _ensureAuthorizationCurrent(generation);
     final account = ConnectedAccount(
       providerId: providerId,
       username: profile.username,
@@ -138,8 +154,10 @@ class GitHubProvider implements DeveloperProvider {
     // Non-fatal: Firebase linking requires provider configuration in the
     // Firebase Console. Token-only connection remains fully functional.
     await _firebaseLinker.linkWithGitHubToken(token.accessToken);
+    _ensureAuthorizationCurrent(generation);
 
     final store = await _connectionStoreFactory();
+    _ensureAuthorizationCurrent(generation);
     await store.save(
       ProviderConnectionRecord.connected(
         providerId: providerId,
@@ -153,12 +171,25 @@ class GitHubProvider implements DeveloperProvider {
   @override
   void cancelAuthorization() {
     _authorizationCancelled = true;
+    _authorizationGeneration++;
+  }
+
+  bool _isAuthorizationCurrent(int generation) =>
+      generation == _authorizationGeneration && !_authorizationCancelled;
+
+  void _ensureAuthorizationCurrent(int generation) {
+    if (!_isAuthorizationCurrent(generation)) {
+      throw const AuthenticationFailed(detail: 'Authorization cancelled.');
+    }
   }
 
   @override
   Future<void> disconnect() async {
+    // Keep cancellation asserted until the next connect begins. Resetting this
+    // flag here could allow a pending poll to resume after a disconnect.
+    _authorizationCancelled = true;
+    _authorizationGeneration++;
     _accessToken = '';
-    _authorizationCancelled = false;
     await _tokenStore.clear();
     try {
       final store = await _connectionStoreFactory();
