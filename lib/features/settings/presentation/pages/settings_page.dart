@@ -458,7 +458,8 @@ class _PrivacyRow extends StatelessWidget {
           title: 'Secure authorization',
           description:
               'GitHub connects through OAuth with minimum required '
-              'permissions. Access tokens are stored only in device-secure storage.',
+              'permissions. Access tokens are stored only in '
+              'device-secure storage.',
           colorScheme: colorScheme,
         ),
         AppSpacing.vSpaceXs,
