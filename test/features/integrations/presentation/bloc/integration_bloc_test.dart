@@ -627,7 +627,13 @@ void main() {
         );
 
         bloc.add(const IntegrationStarted());
-        await waitFor(bloc, (state) => !state.isBusy && state.profile != null);
+        await waitFor(
+          bloc,
+          (state) =>
+              !state.isBusy &&
+              state.profile != null &&
+              provider.fetchProfileCalls > 0,
+        );
 
         cache.delayNextWrite = true;
         bloc.add(const IntegrationDataRefreshRequested());
