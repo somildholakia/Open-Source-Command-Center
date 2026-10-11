@@ -100,8 +100,7 @@ class _AppState extends State<App> {
               integration.add(const IntegrationStarted());
             }
           } else if (state is AuthUnauthenticated) {
-            if (_demoSessionActive ||
-                !FirebaseService.instance.isInitialized) {
+            if (_demoSessionActive || !FirebaseService.instance.isInitialized) {
               // A local preview or unavailable Firebase setup has no Firebase
               // session whose sign-out should erase a stored GitHub connection.
               _demoSessionActive = false;
