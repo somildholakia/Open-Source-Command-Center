@@ -315,15 +315,16 @@ void main() {
         authBloc.add(const AuthSignOutRequested());
       });
 
-      test('emits a recoverable error when sign out fails', () async {
+      test('preserves the authenticated user when sign out fails', () async {
+        when(() => mockAuthService.currentUser).thenReturn(testUser);
         when(() => mockAuthService.signOut()).thenThrow(Exception('offline'));
 
         expectLater(
           authBloc.stream,
           emitsInOrder([
             const AuthLoading(),
-            isA<AuthError>()
-                .having((state) => state.type, 'type', AuthErrorType.unknown)
+            isA<AuthSignOutFailed>()
+                .having((state) => state.user, 'user', testUser)
                 .having(
                   (state) => state.message,
                   'message',

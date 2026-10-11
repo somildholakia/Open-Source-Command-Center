@@ -153,20 +153,32 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthSignOutRequested event,
     Emitter<AuthState> emit,
   ) async {
+    final previousUser = _authService.currentUser;
     emit(const AuthLoading());
+
     try {
       await _authService.signOut();
       emit(const AuthUnauthenticated());
     } on AuthFailure catch (failure) {
-      emit(AuthError(message: failure.message, type: failure.type));
+      final user = _authService.currentUser ?? previousUser;
+      if (user == null) {
+        emit(const AuthUnauthenticated());
+      } else {
+        emit(AuthSignOutFailed(user: user, message: failure.message));
+      }
     } catch (_) {
-      // Keep the user in the authenticated flow so they can retry safely.
-      emit(
-        const AuthError(
-          message: 'Could not sign out. Please try again.',
-          type: AuthErrorType.unknown,
-        ),
-      );
+      // Keep the authenticated screen and its actions available for retry.
+      final user = _authService.currentUser ?? previousUser;
+      if (user == null) {
+        emit(const AuthUnauthenticated());
+      } else {
+        emit(
+          AuthSignOutFailed(
+            user: user,
+            message: 'Could not sign out. Please try again.',
+          ),
+        );
+      }
     }
   }
 

@@ -44,11 +44,21 @@ class SettingsPage extends StatelessWidget {
             // Return to the auth flow when the user signs out.
             if (state is AuthUnauthenticated) {
               context.go(AppRouter.login);
+            } else if (state is AuthSignOutFailed) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             }
           },
           builder: (context, state) {
-            if (state is AuthAuthenticated) {
-              final user = state.user;
+            if (state is AuthAuthenticated || state is AuthSignOutFailed) {
+              final user = state is AuthAuthenticated
+                  ? state.user
+                  : (state as AuthSignOutFailed).user;
               return SingleChildScrollView(
                 child: ResponsiveContainer(
                   child: Column(

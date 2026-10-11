@@ -192,6 +192,40 @@ void main() {
 
       authBloc.close();
     });
+
+    testWidgets('keeps the profile usable when sign out fails', (
+      WidgetTester tester,
+    ) async {
+      final testUser = UserModel(
+        uid: 'test_uid',
+        email: 'tester@example.com',
+        displayName: 'Code Master',
+      );
+
+      when(() => mockAuthService.currentUser).thenReturn(testUser);
+      when(() => mockAuthService.signOut()).thenThrow(Exception('offline'));
+
+      final authBloc = AuthBloc(authService: mockAuthService);
+      authBloc.add(const AuthCheckRequested());
+      await tester.pumpWidget(
+        MaterialApp.router(
+          theme: AppTheme.darkTheme,
+          routerConfig: _testRouter(authBloc),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.byType(ProfileSignOutButton));
+      await tester.tap(find.byType(ProfileSignOutButton));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ProfilePage), findsOneWidget);
+      expect(find.text('Code Master'), findsOneWidget);
+      expect(find.text('Could not sign out. Please try again.'), findsOneWidget);
+      expect(find.byType(ProfileEmptyState), findsNothing);
+
+      await authBloc.close();
+    });
   });
 
   group('ProfilePage GitHub connection card', () {
