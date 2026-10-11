@@ -488,6 +488,53 @@ void main() {
     );
 
     test(
+      'does not restore connected state when disconnected during refresh',
+      () async {
+        final gate = Completer<void>();
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          profile: sampleProfile(),
+          repositories: [sampleRepository()],
+        );
+        final store = InMemoryConnectionStore(connectedRecord());
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => store,
+        );
+
+        bloc.add(const IntegrationStarted());
+        await waitFor(bloc, (state) => !state.isBusy && state.profile != null);
+
+        var completedFetches = 0;
+        final allFetchesReleased = Completer<void>();
+        provider.onFetch = () async {
+          await gate.future;
+          completedFetches++;
+          if (completedFetches == 4 && !allFetchesReleased.isCompleted) {
+            allFetchesReleased.complete();
+          }
+        };
+
+        bloc.add(const IntegrationDataRefreshRequested());
+        await waitFor(bloc, (state) => state.isBusy);
+        bloc.add(const IntegrationDisconnectRequested());
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.disconnected,
+        );
+
+        gate.complete();
+        await allFetchesReleased.future;
+        await Future<void>.delayed(Duration.zero);
+
+        expect(bloc.state.phase, IntegrationPhase.disconnected);
+        expect(bloc.state.connection, isNull);
+        expect(store.record, isNull);
+        await bloc.close();
+      },
+    );
+
+    test(
       'keeps cached data and surfaces the failure when a refresh fails',
       () async {
         final provider = FakeDeveloperProvider(
@@ -628,9 +675,10 @@ void main() {
           connected: true,
           profile: sampleProfile(),
         );
+        final store = InMemoryConnectionStore(connectedRecord());
         final bloc = IntegrationBloc(
           provider: provider,
-          storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+          storeFactory: () async => store,
         );
 
         bloc.add(const IntegrationStarted());
@@ -647,6 +695,7 @@ void main() {
 
         expect(provider.disconnectCalls, 1);
         expect(bloc.state.connection, isNull);
+        expect(store.record, isNull);
         await bloc.close();
       },
     );
@@ -658,9 +707,10 @@ void main() {
           connected: true,
           profile: sampleProfile(),
         );
+        final store = InMemoryConnectionStore(connectedRecord());
         final bloc = IntegrationBloc(
           provider: provider,
-          storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+          storeFactory: () async => store,
         );
 
         bloc.add(const IntegrationStarted());
@@ -677,6 +727,7 @@ void main() {
 
         expect(provider.disconnectCalls, 1);
         expect(bloc.state.profile, isNull);
+        expect(store.record, isNull);
         await bloc.close();
       },
     );
