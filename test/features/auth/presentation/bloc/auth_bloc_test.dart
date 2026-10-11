@@ -314,6 +314,26 @@ void main() {
 
         authBloc.add(const AuthSignOutRequested());
       });
+
+      test('emits a recoverable error when sign out fails', () async {
+        when(() => mockAuthService.signOut()).thenThrow(Exception('offline'));
+
+        expectLater(
+          authBloc.stream,
+          emitsInOrder([
+            const AuthLoading(),
+            isA<AuthError>()
+                .having((state) => state.type, 'type', AuthErrorType.unknown)
+                .having(
+                  (state) => state.message,
+                  'message',
+                  'Could not sign out. Please try again.',
+                ),
+          ]),
+        );
+
+        authBloc.add(const AuthSignOutRequested());
+      });
     });
 
     group('AuthPasswordResetRequested', () {
