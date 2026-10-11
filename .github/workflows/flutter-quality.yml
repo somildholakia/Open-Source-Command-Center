@@ -40,8 +40,11 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
-      - name: Diagnose token storage test formatting
-        run: dart format --output=show test/services/github/github_token_store_test.dart lib/services/firebase/auth_service.dart
+      - name: Diagnose canonical Dart formatting
+        shell: bash
+        run: |
+          dart format test/services/github/github_token_store_test.dart lib/services/firebase/auth_service.dart
+          git diff -- test/services/github/github_token_store_test.dart lib/services/firebase/auth_service.dart
 
       - name: Check Dart formatting
         run: dart format --output=none --set-exit-if-changed lib test
