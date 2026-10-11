@@ -145,14 +145,8 @@ void main() {
       );
       expect(find.text('Secure authorization'), findsOneWidget);
       expect(find.text('Disconnect integrations'), findsOneWidget);
-      expect(
-        find.textContaining('device-secure storage'),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining('local snapshots'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('device-secure storage'), findsOneWidget);
+      expect(find.textContaining('local snapshots'), findsOneWidget);
 
       // Their switches are disabled (onChanged: null)
       final switches = find.byType(Switch);
