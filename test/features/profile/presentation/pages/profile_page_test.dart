@@ -192,7 +192,6 @@ void main() {
 
       authBloc.close();
     });
-
   });
 
   group('ProfilePage GitHub connection card', () {
