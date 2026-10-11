@@ -9,6 +9,7 @@ class DelayedSaveProgressionStore implements ProgressionStore {
   final InMemoryProgressionStore _delegate = InMemoryProgressionStore();
   final Completer<void> saveStarted = Completer<void>();
   final Completer<void> releaseSave = Completer<void>();
+  final Completer<void> clearCompleted = Completer<void>();
   bool _delayNextSave = true;
 
   @override
@@ -25,7 +26,10 @@ class DelayedSaveProgressionStore implements ProgressionStore {
   }
 
   @override
-  Future<void> clear(String accountId) => _delegate.clear(accountId);
+  Future<void> clear(String accountId) async {
+    await _delegate.clear(accountId);
+    if (!clearCompleted.isCompleted) clearCompleted.complete();
+  }
 }
 
 void main() {
@@ -365,10 +369,7 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         store.releaseSave.complete();
 
-        await waitFor(
-          bloc,
-          (_) => store.load('github:octocat') == ProgressionRecord.empty,
-        );
+        await store.clearCompleted.future.timeout(const Duration(seconds: 2));
 
         expect(store.load('github:octocat'), ProgressionRecord.empty);
         await bloc.close();
