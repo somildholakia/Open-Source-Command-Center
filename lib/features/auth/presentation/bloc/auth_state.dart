@@ -46,3 +46,17 @@ class AuthError extends AuthState {
   @override
   List<Object?> get props => [message, type];
 }
+
+/// Result of a password-reset request, emitted only after the service responds.
+class AuthPasswordResetResult extends AuthState {
+  final bool success;
+  final String message;
+
+  const AuthPasswordResetResult({
+    required this.success,
+    required this.message,
+  });
+
+  @override
+  List<Object?> get props => [success, message];
+}

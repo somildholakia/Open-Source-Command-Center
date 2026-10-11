@@ -1,7 +1,32 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opensource_command_center/domain/domain.dart';
 import 'package:opensource_command_center/features/progress/presentation/bloc/intelligence_bloc.dart';
 import 'package:opensource_command_center/services/progression/progression_store.dart';
+
+class DelayedSaveProgressionStore implements ProgressionStore {
+  final InMemoryProgressionStore _delegate = InMemoryProgressionStore();
+  final Completer<void> saveStarted = Completer<void>();
+  final Completer<void> releaseSave = Completer<void>();
+  bool _delayNextSave = true;
+
+  @override
+  ProgressionRecord load(String accountId) => _delegate.load(accountId);
+
+  @override
+  Future<void> save(String accountId, ProgressionRecord record) async {
+    if (_delayNextSave) {
+      _delayNextSave = false;
+      saveStarted.complete();
+      await releaseSave.future;
+    }
+    await _delegate.save(accountId, record);
+  }
+
+  @override
+  Future<void> clear(String accountId) => _delegate.clear(accountId);
+}
 
 void main() {
   // Thursday 2026-10-08; the current week started Monday 2026-10-05.
@@ -181,6 +206,29 @@ void main() {
         greaterThanOrEqualTo(90),
       );
 
+      await bloc.close();
+    });
+
+    test('does not publish an old account after switching during save', () async {
+      final store = DelayedSaveProgressionStore();
+      final bloc = IntelligenceBloc(store, clock: () => now);
+
+      bloc.add(connectedSource(activities: [activity(id: 'merge')]));
+      await store.saveStarted.future.timeout(const Duration(seconds: 2));
+
+      bloc.add(
+        connectedSource(
+          accountId: 'github:mona',
+          withContributions: null,
+        ),
+      );
+      await waitFor(bloc, (state) => state.accountId == 'github:mona');
+
+      store.releaseSave.complete();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(bloc.state.accountId, 'github:mona');
+      expect(bloc.state.hasData, isFalse);
       await bloc.close();
     });
 

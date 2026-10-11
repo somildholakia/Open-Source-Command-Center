@@ -68,7 +68,13 @@ class GitHubProvider implements DeveloperProvider {
   String get displayName => 'GitHub';
 
   @override
-  Future<bool> isConnected() => _tokenStore.hasToken();
+  Future<bool> isConnected() async {
+    // Secure storage survives app restarts, but the API client injects the
+    // in-memory mirror. Hydrate it before any restored-session requests.
+    final token = await _tokenStore.read();
+    _accessToken = token;
+    return token.isNotEmpty;
+  }
 
   // ---------------------------------------------------------------------------
   // Connection lifecycle
@@ -104,7 +110,13 @@ class GitHubProvider implements DeveloperProvider {
           detail: 'The device code expired. Please try again.',
         );
       }
-      token = await _deviceFlow.poll(start: start);
+      token = await _deviceFlow.poll(
+        start: start,
+        onSlowDown: () {
+          // GitHub requires at least five extra seconds after slow_down.
+          interval += const Duration(seconds: 5);
+        },
+      );
       if (token == null) {
         await Future<void>.delayed(interval);
       }

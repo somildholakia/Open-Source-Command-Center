@@ -177,6 +177,7 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
   final DateTime Function() _clock;
   final Map<String, ProgressionRecord> _progressionByAccount = {};
   IntelligenceSourceChanged? _lastSource;
+  int _sourceGeneration = 0;
 
   IntelligenceBloc(this._store, {DateTime Function()? clock})
     : _clock = clock ?? DateTime.now,
@@ -196,6 +197,7 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
     IntelligenceSourceChanged event,
     Emitter<IntelligenceState> emit,
   ) async {
+    final generation = ++_sourceGeneration;
     _lastSource = event;
 
     final accountId = event.accountId;
@@ -225,7 +227,7 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
       } catch (_) {
         // Persistence is best-effort: progression still works this session.
       }
-      if (isClosed) return;
+      if (isClosed || generation != _sourceGeneration) return;
 
       // Recompute so recorded unlocks carry their timestamps and nothing is
       // reported as new twice.
@@ -238,6 +240,7 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
       );
     }
 
+    if (isClosed || generation != _sourceGeneration) return;
     emit(
       IntelligenceState(
         intelligence: intelligence,
@@ -260,6 +263,8 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
     IntelligenceProgressionResetRequested event,
     Emitter<IntelligenceState> emit,
   ) async {
+    // Invalidate any source event still awaiting persistence before resetting.
+    ++_sourceGeneration;
     final accountId = state.accountId;
     if (accountId == null) return;
 

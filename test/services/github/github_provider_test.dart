@@ -157,6 +157,7 @@ void main() {
     required http.Client client,
     FakeGitHubFirebaseLinker? linker,
     InMemoryConnectionStore? store,
+    GitHubTokenStore? tokenStore,
   }) {
     return GitHubProvider(
       httpClient: client,
@@ -164,7 +165,7 @@ void main() {
         client: client,
         clientId: 'test-client-id',
       ),
-      tokenStore: GitHubTokenStore(),
+      tokenStore: tokenStore ?? GitHubTokenStore(),
       firebaseLinker: linker ?? FakeGitHubFirebaseLinker(),
       connectionStoreFactory: () async => store ?? InMemoryConnectionStore(),
     );
@@ -201,6 +202,30 @@ void main() {
       // The GitHub identity is linked to the Firebase account (best effort).
       expect(linker.linkCalls, 1);
       expect(linker.lastToken, 'gho_test_token');
+    });
+
+    test('hydrates the saved token before restored API requests', () async {
+      final tokenStore = GitHubTokenStore();
+      final store = InMemoryConnectionStore();
+      final firstProvider = buildProvider(
+        client: githubMock(),
+        tokenStore: tokenStore,
+        store: store,
+      );
+      await firstProvider.connect();
+
+      // A new provider instance has an empty in-memory token mirror. Startup's
+      // isConnected check must hydrate it from secure storage.
+      final restoredProvider = buildProvider(
+        client: githubMock(),
+        tokenStore: tokenStore,
+        store: store,
+      );
+      expect(await restoredProvider.isConnected(), isTrue);
+      await restoredProvider.fetchProfile();
+
+      final request = requests.lastWhere((r) => r.url.path == '/user');
+      expect(request.headers['Authorization'], 'Bearer gho_test_token');
     });
 
     test(

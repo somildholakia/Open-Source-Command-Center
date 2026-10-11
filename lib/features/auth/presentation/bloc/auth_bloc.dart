@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/utils/email_validator.dart';
 import '../../../../services/firebase/auth_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
@@ -54,7 +55,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return;
     }
 
-    if (!_isValidEmail(event.email)) {
+    if (!EmailValidator.isValid(event.email)) {
       emit(
         const AuthError(
           message: 'Please enter a valid email address',
@@ -98,7 +99,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     // 1. Client-side validations
-    if (event.email.isEmpty || !_isValidEmail(event.email)) {
+    if (event.email.isEmpty || !EmailValidator.isValid(event.email)) {
       emit(
         const AuthError(
           message: 'Please enter a valid email address',
@@ -162,7 +163,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthPasswordResetRequested event,
     Emitter<AuthState> emit,
   ) async {
-    if (event.email.isEmpty || !_isValidEmail(event.email)) {
+    if (event.email.isEmpty || !EmailValidator.isValid(event.email)) {
       emit(
         const AuthError(
           message: 'Please enter a valid email address',
@@ -172,14 +173,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return;
     }
 
-    await _authService.sendPasswordResetEmail(event.email.trim());
-    // Note: Password reset sends an email; the state stays unauthenticated
-    // (the UI shows a snackbar confirmation).
-  }
-
-  /// Simple email validation.
-  bool _isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email.trim());
+    final sent = await _authService.sendPasswordResetEmail(
+      event.email.trim(),
+    );
+    emit(
+      AuthPasswordResetResult(
+        success: sent,
+        message: sent
+            ? 'If an account exists for that email, a reset link has been sent.'
+            : 'Could not send a reset email. Check your connection and try again.',
+      ),
+    );
   }
 
   /// Check for common weak passwords.

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opensource_command_center/core/utils/email_validator.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:opensource_command_center/features/auth/data/models/user_model.dart';
 import 'package:opensource_command_center/features/auth/presentation/bloc/auth.dart';
@@ -7,6 +8,17 @@ import 'package:opensource_command_center/services/firebase/auth_service.dart';
 class MockAuthService extends Mock implements AuthService {}
 
 void main() {
+  group('shared email validation', () {
+    test('accepts modern TLDs longer than four characters', () {
+      expect(EmailValidator.isValid('dev@example.technology'), isTrue);
+    });
+
+    test('rejects malformed addresses', () {
+      expect(EmailValidator.isValid('dev@'), isFalse);
+      expect(EmailValidator.isValid('dev @example.com'), isFalse);
+    });
+  });
+
   group('AuthBloc', () {
     late MockAuthService mockAuthService;
     late AuthBloc authBloc;
@@ -305,7 +317,7 @@ void main() {
     });
 
     group('AuthPasswordResetRequested', () {
-      test('calls service when email is valid', () async {
+      test('reports success only after the reset service succeeds', () async {
         when(() => mockAuthService.sendPasswordResetEmail('dev@example.com'))
             .thenAnswer((_) async => true);
 
@@ -316,6 +328,27 @@ void main() {
 
         verify(() => mockAuthService.sendPasswordResetEmail('dev@example.com'))
             .called(1);
+        expect(
+          authBloc.state,
+          isA<AuthPasswordResetResult>()
+              .having((state) => state.success, 'success', isTrue),
+        );
+      });
+
+      test('reports failure when the reset service cannot send email', () async {
+        when(() => mockAuthService.sendPasswordResetEmail('dev@example.com'))
+            .thenAnswer((_) async => false);
+
+        authBloc.add(
+          const AuthPasswordResetRequested(email: 'dev@example.com'),
+        );
+        await pumpEventQueue();
+
+        expect(
+          authBloc.state,
+          isA<AuthPasswordResetResult>()
+              .having((state) => state.success, 'success', isFalse),
+        );
       });
 
       test('emits AuthError when email is invalid', () async {

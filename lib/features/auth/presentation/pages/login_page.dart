@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/email_validator.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/cartoon_page_banner.dart';
@@ -56,6 +57,16 @@ class _LoginPageState extends State<LoginPage> {
       listener: (context, state) {
         if (state is AuthAuthenticated) {
           context.go('/');
+        } else if (state is AuthPasswordResetResult) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: state.success
+                  ? AppColors.successAccent
+                  : AppColors.errorAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -400,15 +411,9 @@ class _LoginPageState extends State<LoginPage> {
 
   void _showForgotPassword() {
     final emailParam = _emailController.text.trim();
-    if (emailParam.isNotEmpty && emailParam.contains('@')) {
+    if (EmailValidator.isValid(emailParam)) {
       context.read<AuthBloc>().add(
         AuthPasswordResetRequested(email: emailParam),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Password reset email sent if account exists'),
-          backgroundColor: AppColors.successAccent,
-        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
