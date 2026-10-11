@@ -64,11 +64,6 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
-      - name: Diagnose canonical integration-test formatting
-        run: |
-          dart format test/features/integrations/presentation/bloc/integration_bloc_test.dart
-          git diff -- test/features/integrations/presentation/bloc/integration_bloc_test.dart
-
       - name: Check Dart formatting
         run: dart format --output=none --set-exit-if-changed lib test
 
