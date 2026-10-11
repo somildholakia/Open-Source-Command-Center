@@ -458,14 +458,15 @@ class _PrivacyRow extends StatelessWidget {
           title: 'Secure authorization',
           description:
               'GitHub connects through OAuth with minimum required '
-              'permissions. Tokens are never stored in the app.',
+              'permissions. Access tokens are stored only in device-secure storage.',
           colorScheme: colorScheme,
         ),
         AppSpacing.vSpaceXs,
         _PrivacyItem(
           icon: Icons.link_off_rounded,
           title: 'Disconnect integrations',
-          description: 'Manage connected accounts once GitHub sync is live.',
+          description:
+              'Disconnecting GitHub removes its saved token and local snapshots.',
           colorScheme: colorScheme,
         ),
       ],
