@@ -35,11 +35,7 @@ void main() {
                 'message',
                 'Sign-in failed. Please try again.',
               )
-              .having(
-                (failure) => failure.message.contains('private internal details'),
-                'does not contain private exception details',
-                isFalse,
-              ),
+
         ),
       );
     });
@@ -98,11 +94,7 @@ void main() {
                 'message',
                 'Authentication failed. Please try again.',
               )
-              .having(
-                (failure) => failure.message.contains('private Firebase diagnostic details'),
-                'does not contain private Firebase details',
-                isFalse,
-              ),
+
         ),
       );
     });
