@@ -53,6 +53,8 @@ void main() {
     );
     await tester.tap(find.byType(Checkbox));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Initialize New Agent'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Initialize New Agent'));
     await tester.pumpAndSettle();
 
