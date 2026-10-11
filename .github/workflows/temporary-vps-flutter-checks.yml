@@ -64,6 +64,11 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
+      - name: Diagnose formatter changes
+        run: |
+          dart format lib/features/progress/presentation/bloc/intelligence_bloc.dart lib/services/github/github_provider.dart test/services/github/github_provider_test.dart
+          git diff -- lib/features/progress/presentation/bloc/intelligence_bloc.dart lib/services/github/github_provider.dart test/services/github/github_provider_test.dart
+
       - name: Check Dart formatting
         run: dart format --output=none --set-exit-if-changed lib test
 
