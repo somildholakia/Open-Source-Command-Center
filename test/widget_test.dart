@@ -180,7 +180,13 @@ void main() {
     expect(find.text('Hello, Developer!'), findsOneWidget);
     expect(tester.takeException(), isNull, reason: 'compact login and home');
 
-    for (final tab in ['Activity', 'Contributions', 'Progress', 'Profile', 'Home']) {
+    for (final tab in [
+      'Activity',
+      'Contributions',
+      'Progress',
+      'Profile',
+      'Home',
+    ]) {
       await tester.tap(find.text(tab).last);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull, reason: 'compact $tab layout');
