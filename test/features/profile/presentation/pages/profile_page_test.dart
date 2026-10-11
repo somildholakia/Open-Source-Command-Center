@@ -221,7 +221,10 @@ void main() {
 
       expect(find.byType(ProfilePage), findsOneWidget);
       expect(find.text('Code Master'), findsOneWidget);
-      expect(find.text('Could not sign out. Please try again.'), findsOneWidget);
+      expect(
+        find.text('Could not sign out. Please try again.'),
+        findsOneWidget,
+      );
       expect(find.byType(ProfileEmptyState), findsNothing);
 
       await authBloc.close();
