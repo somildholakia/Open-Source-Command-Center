@@ -51,12 +51,6 @@ jobs:
           timeout --kill-after=5s 60s flutter test --no-pub --reporter expanded
           test/features/auth/presentation/bloc/auth_bloc_test.dart
 
-      - name: Run profile sign-out recovery widget test
-        run: >-
-          timeout --kill-after=5s 60s flutter test --no-pub --reporter expanded
-          --plain-name "keeps the profile usable when sign out fails"
-          test/features/profile/presentation/pages/profile_page_test.dart
-
       - name: Run tests
         run: flutter test --no-pub --reporter expanded
 

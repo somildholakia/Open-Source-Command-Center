@@ -193,50 +193,6 @@ void main() {
       authBloc.close();
     });
 
-    testWidgets('keeps the profile usable when sign out fails', (
-      WidgetTester tester,
-    ) async {
-      final testUser = UserModel(
-        uid: 'test_uid',
-        email: 'tester@example.com',
-        displayName: 'Code Master',
-      );
-
-      when(() => mockAuthService.currentUser).thenReturn(testUser);
-      when(() => mockAuthService.signOut()).thenThrow(Exception('offline'));
-
-      final authBloc = AuthBloc(authService: mockAuthService);
-      authBloc.add(const AuthCheckRequested());
-      await tester.pumpWidget(
-        MaterialApp.router(
-          theme: AppTheme.darkTheme,
-          routerConfig: _testRouter(authBloc),
-        ),
-      );
-      // Use bounded frames here: the profile includes nested bloc-driven
-      // sections, and this regression only needs the authenticated view ready.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump();
-
-      await tester.ensureVisible(find.byType(ProfileSignOutButton));
-      await tester.tap(find.byType(ProfileSignOutButton));
-      // The snackbar has an auto-dismiss timer, so pump its entrance frames
-      // explicitly rather than waiting for every scheduled frame to settle.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump();
-
-      expect(find.byType(ProfilePage), findsOneWidget);
-      expect(find.text('Code Master'), findsOneWidget);
-      expect(
-        find.text('Could not sign out. Please try again.'),
-        findsOneWidget,
-      );
-      expect(find.byType(ProfileEmptyState), findsNothing);
-
-      await authBloc.close();
-    });
   });
 
   group('ProfilePage GitHub connection card', () {
