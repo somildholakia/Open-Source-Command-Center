@@ -117,6 +117,44 @@ void main() {
       },
     );
 
+    test(
+      'clears orphaned connection metadata and cache when token is missing',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final preferences = await SharedPreferences.getInstance();
+        final cache = LocalSnapshotStore(preferences);
+        await cache.write(
+          accountId: 'github:octocat',
+          namespace: 'profile',
+          payload: ProviderSnapshotCodec.encodeProfile(sampleProfile()),
+          schemaVersion: 1,
+        );
+        final store = InMemoryConnectionStore(connectedRecord());
+        final bloc = IntegrationBloc(
+          provider: FakeDeveloperProvider(connected: false),
+          storeFactory: () async => store,
+          snapshotStoreFactory: () async => cache,
+        );
+
+        bloc.add(const IntegrationStarted());
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.disconnected,
+        );
+
+        expect(store.record, isNull);
+        expect(
+          await cache.read(
+            accountId: 'github:octocat',
+            namespace: 'profile',
+            schemaVersion: 1,
+          ),
+          isNull,
+        );
+        await bloc.close();
+      },
+    );
+
     test('disconnects silently when the stored token was rejected', () async {
       final provider = FakeDeveloperProvider(
         connected: true,
