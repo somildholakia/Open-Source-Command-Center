@@ -178,3 +178,28 @@ with a confirmation dialog). Disconnecting:
 The GitHub authorization itself remains on the user's GitHub account until they
 revoke it in **GitHub → Settings → Applications**; the app cannot revoke it
 server-side without a backend, which is a planned backend responsibility.
+
+
+## 9. Building a configured manual-test APK from GitHub Actions
+
+The feature-branch VPS workflow can build an APK with Firebase and GitHub
+integration enabled without committing local configuration files.
+
+In the repository, open **Settings → Secrets and variables → Actions** and add:
+
+- **Repository secret** `GOOGLE_SERVICES_JSON`: paste the complete contents of
+  your local `android/app/google-services.json` file as raw JSON. Do not commit
+  this file to Git.
+- **Repository variable** `GITHUB_OAUTH_CLIENT_ID`: the public Client ID of
+  your GitHub OAuth App, with Device Flow enabled. Never store a client secret
+  in this variable or in the Flutter app.
+
+Then rerun **Actions → Temporary VPS Flutter checks**. The workflow writes the
+Firebase config only into its temporary checkout (the file remains gitignored)
+and passes the public GitHub Client ID using `--dart-define`. It does not upload
+the raw Firebase config as an artifact. If either setting is missing, the APK
+still builds, but the corresponding authentication flow will not be fully
+configured; GitHub Actions will show a warning.
+
+The uploaded debug APK is a temporary manual-testing build, not a signed
+production release. Download it from the workflow run's **Artifacts** section.

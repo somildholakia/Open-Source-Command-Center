@@ -73,8 +73,31 @@ jobs:
       - name: Run tests
         run: flutter test --no-pub --reporter expanded
 
+      # The Firebase file is intentionally gitignored. Inject it only for this
+      # trusted feature-branch build, and never upload the raw config as an artifact.
+      - name: Configure optional Firebase and GitHub OAuth
+        shell: bash
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          GITHUB_OAUTH_CLIENT_ID: ${{ vars.GITHUB_OAUTH_CLIENT_ID }}
+        run: |
+          if [[ -n "$GOOGLE_SERVICES_JSON" ]]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+            echo "Firebase Android config prepared for this build."
+          else
+            echo "::warning::GOOGLE_SERVICES_JSON secret is not configured; Firebase authentication will not work in this APK."
+          fi
+
+          if [[ -n "$GITHUB_OAUTH_CLIENT_ID" ]]; then
+            echo "GITHUB_OAUTH_CLIENT_ID=$GITHUB_OAUTH_CLIENT_ID" >> "$GITHUB_ENV"
+            echo "GitHub device flow will be enabled in this APK."
+          else
+            echo "GITHUB_OAUTH_CLIENT_ID=" >> "$GITHUB_ENV"
+            echo "::warning::GITHUB_OAUTH_CLIENT_ID variable is not configured; GitHub connect will show the setup message."
+          fi
+
       - name: Build debug APK
-        run: flutter build apk --debug
+        run: flutter build apk --debug --dart-define="GITHUB_OAUTH_CLIENT_ID=$GITHUB_OAUTH_CLIENT_ID"
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
