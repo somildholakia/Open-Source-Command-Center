@@ -642,10 +642,12 @@ void main() {
         bloc,
         (state) => state.phase == IntegrationPhase.disconnected,
       );
-      expect(store.record, isNull);
 
+      // Always release the delayed write before asserting so a failed
+      // assertion cannot leave the refresh handler blocked indefinitely.
       cache.releaseWrite.complete();
       await cache.delayedWriteCompleted.future;
+      expect(store.record, isNull);
       for (var i = 0; i < 50; i++) {
         final snapshot = await cache.read(
           accountId: 'github:octocat',
