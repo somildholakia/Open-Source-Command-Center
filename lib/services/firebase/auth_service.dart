@@ -88,9 +88,7 @@ class AuthService {
     } catch (e) {
       if (e is AuthFailure) rethrow;
       // Do not surface arbitrary SDK/platform exception text to users.
-      debugPrint(
-        '[AuthService] Unexpected sign-in failure: ${e.runtimeType}',
-      );
+      debugPrint('[AuthService] Unexpected sign-in failure: ${e.runtimeType}');
       throw const AuthFailure(
         type: AuthErrorType.unknown,
         message: 'Sign-in failed. Please try again.',
@@ -145,9 +143,7 @@ class AuthService {
     } catch (e) {
       if (e is AuthFailure) rethrow;
       // Do not surface arbitrary SDK/platform exception text to users.
-      debugPrint(
-        '[AuthService] Unexpected sign-up failure: ${e.runtimeType}',
-      );
+      debugPrint('[AuthService] Unexpected sign-up failure: ${e.runtimeType}');
       throw const AuthFailure(
         type: AuthErrorType.unknown,
         message: 'Sign-up failed. Please try again.',
