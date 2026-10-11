@@ -64,6 +64,11 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
+      - name: Diagnose preview-flow formatter changes
+        run: |
+          dart format lib/features/auth/presentation/bloc/auth_bloc.dart lib/features/auth/presentation/pages/login_page.dart lib/features/dashboard/presentation/pages/dashboard_page.dart test/features/auth/presentation/bloc/auth_bloc_test.dart test/features/auth/presentation/pages/login_page_test.dart
+          git diff -- lib/features/auth/presentation/bloc/auth_bloc.dart lib/features/auth/presentation/pages/login_page.dart lib/features/dashboard/presentation/pages/dashboard_page.dart test/features/auth/presentation/bloc/auth_bloc_test.dart test/features/auth/presentation/pages/login_page_test.dart
+
       - name: Check Dart formatting
         run: dart format --output=none --set-exit-if-changed lib test
 
