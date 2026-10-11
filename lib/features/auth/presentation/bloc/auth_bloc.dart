@@ -86,9 +86,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthAuthenticated(user: user));
     } on AuthFailure catch (f) {
       emit(AuthError(message: f.message, type: f.type));
-    } catch (e) {
+    } catch (_) {
       emit(
-        AuthError(message: 'Sign-in failed: $e', type: AuthErrorType.unknown),
+        const AuthError(
+          message: 'Sign-in failed. Please try again.',
+          type: AuthErrorType.unknown,
+        ),
       );
     }
   }
@@ -141,9 +144,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthAuthenticated(user: user));
     } on AuthFailure catch (f) {
       emit(AuthError(message: f.message, type: f.type));
-    } catch (e) {
+    } catch (_) {
       emit(
-        AuthError(message: 'Sign-up failed: $e', type: AuthErrorType.unknown),
+        const AuthError(
+          message: 'Sign-up failed. Please try again.',
+          type: AuthErrorType.unknown,
+        ),
       );
     }
   }

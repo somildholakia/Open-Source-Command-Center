@@ -160,6 +160,36 @@ void main() {
         );
       });
 
+      test('does not expose unexpected sign-in exceptions', () async {
+        when(
+          () => mockAuthService.signInWithEmailAndPassword(
+            email: 'test@example.com',
+            password: 'password123',
+          ),
+        ).thenThrow(Exception('internal details'));
+
+        expectLater(
+          authBloc.stream,
+          emitsInOrder([
+            const AuthLoading(),
+            isA<AuthError>()
+                .having((state) => state.type, 'type', AuthErrorType.unknown)
+                .having(
+                  (state) => state.message,
+                  'message',
+                  'Sign-in failed. Please try again.',
+                ),
+          ]),
+        );
+
+        authBloc.add(
+          const AuthSignInRequested(
+            email: 'test@example.com',
+            password: 'password123',
+          ),
+        );
+      });
+
       test(
         'emits [AuthLoading, AuthError] when service throws AuthFailure',
         () async {
@@ -262,6 +292,37 @@ void main() {
           const AuthSignUpRequested(
             email: 'newdev@example.com',
             password: 'password123',
+          ),
+        );
+      });
+
+      test('does not expose unexpected sign-up exceptions', () async {
+        when(
+          () => mockAuthService.signUpWithEmailAndPassword(
+            email: 'newdev@example.com',
+            password: 'strongPassword99!',
+            displayName: null,
+          ),
+        ).thenThrow(Exception('internal details'));
+
+        expectLater(
+          authBloc.stream,
+          emitsInOrder([
+            const AuthLoading(),
+            isA<AuthError>()
+                .having((state) => state.type, 'type', AuthErrorType.unknown)
+                .having(
+                  (state) => state.message,
+                  'message',
+                  'Sign-up failed. Please try again.',
+                ),
+          ]),
+        );
+
+        authBloc.add(
+          const AuthSignUpRequested(
+            email: 'newdev@example.com',
+            password: 'strongPassword99!',
           ),
         );
       });
