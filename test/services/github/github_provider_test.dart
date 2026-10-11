@@ -383,8 +383,6 @@ void main() {
       expect(linker.unlinkCalls, 1);
     });
 
-
-
     test('stops polling when authorization is cancelled', () async {
       final client = githubMock(pollSuccessAfter: 100);
       final provider = buildProvider(client: client);
