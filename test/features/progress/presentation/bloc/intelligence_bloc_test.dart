@@ -209,28 +209,28 @@ void main() {
       await bloc.close();
     });
 
-    test('does not publish an old account after switching during save', () async {
-      final store = DelayedSaveProgressionStore();
-      final bloc = IntelligenceBloc(store, clock: () => now);
+    test(
+      'does not publish an old account after switching during save',
+      () async {
+        final store = DelayedSaveProgressionStore();
+        final bloc = IntelligenceBloc(store, clock: () => now);
 
-      bloc.add(connectedSource(activities: [activity(id: 'merge')]));
-      await store.saveStarted.future.timeout(const Duration(seconds: 2));
+        bloc.add(connectedSource(activities: [activity(id: 'merge')]));
+        await store.saveStarted.future.timeout(const Duration(seconds: 2));
 
-      bloc.add(
-        connectedSource(
-          accountId: 'github:mona',
-          withContributions: null,
-        ),
-      );
-      await waitFor(bloc, (state) => state.accountId == 'github:mona');
+        bloc.add(
+          connectedSource(accountId: 'github:mona', withContributions: null),
+        );
+        await waitFor(bloc, (state) => state.accountId == 'github:mona');
 
-      store.releaseSave.complete();
-      await Future<void>.delayed(Duration.zero);
+        store.releaseSave.complete();
+        await Future<void>.delayed(Duration.zero);
 
-      expect(bloc.state.accountId, 'github:mona');
-      expect(bloc.state.hasData, isFalse);
-      await bloc.close();
-    });
+        expect(bloc.state.accountId, 'github:mona');
+        expect(bloc.state.hasData, isFalse);
+        await bloc.close();
+      },
+    );
 
     test('progression never leaks between accounts', () async {
       final store = InMemoryProgressionStore();

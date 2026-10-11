@@ -52,10 +52,7 @@ class AuthPasswordResetResult extends AuthState {
   final bool success;
   final String message;
 
-  const AuthPasswordResetResult({
-    required this.success,
-    required this.message,
-  });
+  const AuthPasswordResetResult({required this.success, required this.message});
 
   @override
   List<Object?> get props => [success, message];

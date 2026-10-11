@@ -173,9 +173,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return;
     }
 
-    final sent = await _authService.sendPasswordResetEmail(
-      event.email.trim(),
-    );
+    final sent = await _authService.sendPasswordResetEmail(event.email.trim());
     emit(
       AuthPasswordResetResult(
         success: sent,

@@ -330,26 +330,35 @@ void main() {
             .called(1);
         expect(
           authBloc.state,
-          isA<AuthPasswordResetResult>()
-              .having((state) => state.success, 'success', isTrue),
+          isA<AuthPasswordResetResult>().having(
+            (state) => state.success,
+            'success',
+            isTrue,
+          ),
         );
       });
 
-      test('reports failure when the reset service cannot send email', () async {
-        when(() => mockAuthService.sendPasswordResetEmail('dev@example.com'))
-            .thenAnswer((_) async => false);
+      test(
+        'reports failure when the reset service cannot send email',
+        () async {
+          when(() => mockAuthService.sendPasswordResetEmail('dev@example.com'))
+              .thenAnswer((_) async => false);
 
-        authBloc.add(
-          const AuthPasswordResetRequested(email: 'dev@example.com'),
-        );
-        await pumpEventQueue();
+          authBloc.add(
+            const AuthPasswordResetRequested(email: 'dev@example.com'),
+          );
+          await pumpEventQueue();
 
-        expect(
-          authBloc.state,
-          isA<AuthPasswordResetResult>()
-              .having((state) => state.success, 'success', isFalse),
-        );
-      });
+          expect(
+            authBloc.state,
+            isA<AuthPasswordResetResult>().having(
+              (state) => state.success,
+              'success',
+              isFalse,
+            ),
+          );
+        },
+      );
 
       test('emits AuthError when email is invalid', () async {
         expectLater(
