@@ -4,7 +4,7 @@ Use this checklist only after downloading the debug APK artifact from the latest
 
 ## Build configuration preflight
 
-The current GitHub Actions build reports that authentication configuration is missing. Before testing sign-in and the live GitHub connection, configure these in the repository's **Settings → Secrets and variables → Actions**:
+If the latest GitHub Actions build reports missing authentication configuration, configure these in the repository's **Settings → Secrets and variables → Actions** before testing sign-in and the live GitHub connection:
 
 - **Repository secret:** `GOOGLE_SERVICES_JSON` — the complete contents of your local `android/app/google-services.json` file.
 - **Repository variable:** `GITHUB_OAUTH_CLIENT_ID` — the public client ID for the GitHub OAuth App with Device Flow enabled.

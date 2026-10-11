@@ -78,7 +78,9 @@ SharedPreferences is suitable for small JSON snapshots only while their size rem
 - [x] A transient refresh failure keeps last-known normalized data visible and marks it stale.
 - [x] Explicit GitHub disconnect clears the active account's snapshots.
 - [x] App sign-out clears the active provider account's snapshots as well as disconnecting its token.
-- [ ] Confirm all cache lifecycle tests pass on the current pull-request head.
+- [x] Confirm all cache lifecycle tests pass on the current pull-request head.
+- [x] Clear disconnected account progression history without affecting other accounts.
+- [ ] Manually verify disconnect cleanup and account switching on Android.
 - [ ] Verify offline startup and refresh behavior on an Android emulator.
 - [ ] Verify compact-phone and tablet layouts in both light and dark themes.
 - [ ] Confirm the full formatting, analyzer, and test workflow passes before merge.

@@ -372,10 +372,7 @@ void main() {
 
         final bloc = IntelligenceBloc(store, clock: () => now);
         bloc.add(
-          connectedSource(
-            accountId: 'github:mona',
-            withContributions: null,
-          ),
+          connectedSource(accountId: 'github:mona', withContributions: null),
         );
         await waitFor(bloc, (state) => state.accountId == 'github:mona');
 
