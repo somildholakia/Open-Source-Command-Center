@@ -466,8 +466,7 @@ class _PrivacyRow extends StatelessWidget {
         _PrivacyItem(
           icon: Icons.link_off_rounded,
           title: 'Disconnect integrations',
-          description:
-              'Disconnecting GitHub removes its saved token and local snapshots.',
+          description: 'Disconnecting GitHub removes its saved token and local snapshots.',
           colorScheme: colorScheme,
         ),
       ],
