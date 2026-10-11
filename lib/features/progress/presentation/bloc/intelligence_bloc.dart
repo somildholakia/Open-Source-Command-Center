@@ -186,6 +186,10 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
   final ProgressionStore _store;
   final DateTime Function() _clock;
   final Map<String, ProgressionRecord> _progressionByAccount = {};
+  // Serialize writes and clears per account. A save that started before a
+  // disconnect/reset must finish before the clear, otherwise it can resurrect
+  // history after the user explicitly removed it.
+  final Map<String, Future<void>> _persistenceTails = {};
   IntelligenceSourceChanged? _lastSource;
   int _sourceGeneration = 0;
 
@@ -202,6 +206,18 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
       accountId,
       () => _store.load(accountId),
     );
+  }
+
+  Future<void> _enqueuePersistence(
+    String accountId,
+    Future<void> Function() operation,
+  ) {
+    final previous = _persistenceTails[accountId] ?? Future<void>.value();
+    final next = previous
+        .catchError((Object _) {})
+        .then((_) => operation());
+    _persistenceTails[accountId] = next;
+    return next;
   }
 
   Future<void> _onSourceChanged(
@@ -226,6 +242,9 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
     );
 
     if (accountId != null && _hasNewProgression(intelligence)) {
+      // Do not enqueue a write from a source event that has already lost a
+      // race with disconnect, reset, or a newer account/source event.
+      if (isClosed || generation != _sourceGeneration) return;
       for (final id in intelligence.newlyUnlockedAchievementIds) {
         progression = progression.withAchievement(id, now);
       }
@@ -234,7 +253,10 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
       }
       _progressionByAccount[accountId] = progression;
       try {
-        await _store.save(accountId, progression);
+        await _enqueuePersistence(
+          accountId,
+          () => _store.save(accountId, progression),
+        );
       } catch (_) {
         // Persistence is best-effort: progression still works this session.
       }
@@ -280,7 +302,10 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
     ++_sourceGeneration;
     _progressionByAccount.remove(event.accountId);
     try {
-      await _store.clear(event.accountId);
+      await _enqueuePersistence(
+        event.accountId,
+        () => _store.clear(event.accountId),
+      );
     } catch (_) {
       // Best-effort cleanup must not block the connection lifecycle.
     }
@@ -298,7 +323,7 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
 
     _progressionByAccount.remove(accountId);
     try {
-      await _store.clear(accountId);
+      await _enqueuePersistence(accountId, () => _store.clear(accountId));
     } catch (_) {
       // Best-effort; in-memory history is forgotten either way.
     }
