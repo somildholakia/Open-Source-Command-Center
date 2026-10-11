@@ -133,16 +133,11 @@ class GitHubProvider implements DeveloperProvider {
 
     // Step 3: store the token securely + link to Firebase (best effort).
     await _tokenStore.write(token.accessToken);
-    if (!_isAuthorizationCurrent(generation)) {
-      // A disconnect can race with secure-storage I/O. Remove any token that
-      // this now-stale authorization may have written after disconnect began.
-      if (_authorizationCancelled) await _tokenStore.clear();
-      throw const AuthenticationFailed(detail: 'Authorization cancelled.');
-    }
+    await _ensureAuthorizationCurrentAfterStorage(generation);
     _accessToken = token.accessToken;
 
     final profile = await fetchProfile();
-    _ensureAuthorizationCurrent(generation);
+    await _ensureAuthorizationCurrentAfterStorage(generation);
     final account = ConnectedAccount(
       providerId: providerId,
       username: profile.username,
@@ -154,16 +149,17 @@ class GitHubProvider implements DeveloperProvider {
     // Non-fatal: Firebase linking requires provider configuration in the
     // Firebase Console. Token-only connection remains fully functional.
     await _firebaseLinker.linkWithGitHubToken(token.accessToken);
-    _ensureAuthorizationCurrent(generation);
+    await _ensureAuthorizationCurrentAfterStorage(generation);
 
     final store = await _connectionStoreFactory();
-    _ensureAuthorizationCurrent(generation);
+    await _ensureAuthorizationCurrentAfterStorage(generation);
     await store.save(
       ProviderConnectionRecord.connected(
         providerId: providerId,
         account: account,
       ),
     );
+    await _ensureAuthorizationCurrentAfterStorage(generation);
 
     return ConnectionResult(account: account, profile: profile);
   }
@@ -181,6 +177,31 @@ class GitHubProvider implements DeveloperProvider {
     if (!_isAuthorizationCurrent(generation)) {
       throw const AuthenticationFailed(detail: 'Authorization cancelled.');
     }
+  }
+
+  /// Reconciles side effects if cancellation arrives after token persistence.
+  ///
+  /// A pending profile/link/store operation may complete after disconnect has
+  /// already cleared local state. Clear those late side effects before the
+  /// cancelled connection attempt returns to its caller.
+  Future<void> _ensureAuthorizationCurrentAfterStorage(
+    int generation,
+  ) async {
+    if (_isAuthorizationCurrent(generation)) return;
+
+    if (_authorizationCancelled) {
+      _accessToken = '';
+      await _tokenStore.clear();
+      try {
+        final store = await _connectionStoreFactory();
+        await store.clear();
+      } catch (_) {}
+      try {
+        await _firebaseLinker.unlinkGitHub();
+      } catch (_) {}
+    }
+
+    throw const AuthenticationFailed(detail: 'Authorization cancelled.');
   }
 
   @override
