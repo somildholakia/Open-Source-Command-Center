@@ -213,7 +213,11 @@ void main() {
           routerConfig: _testRouter(authBloc),
         ),
       );
-      await tester.pumpAndSettle();
+      // Use bounded frames here: the profile includes nested bloc-driven
+      // sections, and this regression only needs the authenticated view ready.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
 
       await tester.ensureVisible(find.byType(ProfileSignOutButton));
       await tester.tap(find.byType(ProfileSignOutButton));
