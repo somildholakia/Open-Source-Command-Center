@@ -310,81 +310,80 @@ void main() {
       },
     );
 
-    test(
-      'clears a late token when cancelled during profile loading',
-      () async {
-        final profileStarted = Completer<void>();
-        final profileResponse = Completer<http.Response>();
-        requests = [];
-        final client = MockClient((request) async {
-          requests.add(request);
-          switch (request.url.path) {
-            case '/login/device/code':
-              return http.Response(
-                jsonEncode({
-                  'device_code': 'device-1',
-                  'user_code': 'WDJB-MJHT',
-                  'verification_uri': 'https://github.com/login/device',
-                  'expires_in': 900,
-                  'interval': 1,
-                }),
-                200,
-              );
-            case '/login/oauth/access_token':
-              return http.Response(
-                jsonEncode({'access_token': 'gho_cancelled_token'}),
-                200,
-              );
-            case '/user':
-              if (!profileStarted.isCompleted) profileStarted.complete();
-              return profileResponse.future;
-            default:
-              return http.Response('not found', 404);
-          }
-        });
-        final tokenStore = GitHubTokenStore();
-        final store = InMemoryConnectionStore();
-        final linker = FakeGitHubFirebaseLinker();
-        final provider = buildProvider(
-          client: client,
-          tokenStore: tokenStore,
-          store: store,
-          linker: linker,
-        );
+    test('clears a late token when cancelled during profile loading', () async {
+      final profileStarted = Completer<void>();
+      final profileResponse = Completer<http.Response>();
+      requests = [];
+      final client = MockClient((request) async {
+        requests.add(request);
+        switch (request.url.path) {
+          case '/login/device/code':
+            return http.Response(
+              jsonEncode({
+                'device_code': 'device-1',
+                'user_code': 'WDJB-MJHT',
+                'verification_uri': 'https://github.com/login/device',
+                'expires_in': 900,
+                'interval': 1,
+              }),
+              200,
+            );
+          case '/login/oauth/access_token':
+            return http.Response(
+              jsonEncode({'access_token': 'gho_cancelled_token'}),
+              200,
+            );
+          case '/user':
+            if (!profileStarted.isCompleted) profileStarted.complete();
+            return profileResponse.future;
+          default:
+            return http.Response('not found', 404);
+        }
+      });
+      final tokenStore = GitHubTokenStore();
+      final store = InMemoryConnectionStore();
+      final linker = FakeGitHubFirebaseLinker();
+      final provider = buildProvider(
+        client: client,
+        tokenStore: tokenStore,
+        store: store,
+        linker: linker,
+      );
 
-        final connecting = provider.connect();
-        await profileStarted.future;
-        provider.cancelAuthorization();
-        profileResponse.complete(
-          http.Response(
-            jsonEncode({
-              'id': 1,
-              'login': 'octocat',
-              'name': 'The Octocat',
-              'avatar_url': '',
-              'html_url': 'https://github.com/octocat',
-              'public_repos': 8,
-              'followers': 100,
-            }),
-            200,
-          ),
-        );
+      final connecting = provider.connect();
+      await profileStarted.future;
+      provider.cancelAuthorization();
+      profileResponse.complete(
+        http.Response(
+          jsonEncode({
+            'id': 1,
+            'login': 'octocat',
+            'name': 'The Octocat',
+            'avatar_url': '',
+            'html_url': 'https://github.com/octocat',
+            'public_repos': 8,
+            'followers': 100,
+          }),
+          200,
+        ),
+      );
 
-        await expectLater(
-          connecting,
-          throwsA(
-            isA<AuthenticationFailed>().having(
-              (failure) => failure.detail,
-              'detail',
-              contains('cancelled'),
-            ),
+      await expectLater(
+        connecting,
+        throwsA(
+          isA<AuthenticationFailed>().having(
+            (failure) => failure.detail,
+            'detail',
+            contains('cancelled'),
           ),
-        );
-        expect(await provider.isConnected(), isFalse);
-        expect(store.record, isNull);
-        expect(linker.unlinkCalls, 1);
-      },
-    );
+        ),
+      );
+      expect(await provider.isConnected(), isFalse);
+      expect(store.record, isNull);
+      expect(linker.unlinkCalls, 1);
+    });
+
+
 
     test('stops polling when authorization is cancelled', () async {
       final client = githubMock(pollSuccessAfter: 100);

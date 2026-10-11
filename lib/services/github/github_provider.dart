@@ -184,9 +184,7 @@ class GitHubProvider implements DeveloperProvider {
   /// A pending profile/link/store operation may complete after disconnect has
   /// already cleared local state. Clear those late side effects before the
   /// cancelled connection attempt returns to its caller.
-  Future<void> _ensureAuthorizationCurrentAfterStorage(
-    int generation,
-  ) async {
+  Future<void> _ensureAuthorizationCurrentAfterStorage(int generation) async {
     if (_isAuthorizationCurrent(generation)) return;
 
     if (_authorizationCancelled) {

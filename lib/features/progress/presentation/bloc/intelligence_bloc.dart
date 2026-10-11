@@ -212,11 +212,8 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
     String accountId,
     Future<void> Function() operation,
   ) {
-    final previous =
-        _persistenceTails[accountId] ?? Future<void>.value();
-    final next = previous
-        .catchError((Object _) {})
-        .then((_) => operation());
+    final previous = _persistenceTails[accountId] ?? Future<void>.value();
+    final next = previous.catchError((Object _) {}).then((_) => operation());
     _persistenceTails[accountId] = next;
     return next;
   }
