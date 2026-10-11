@@ -352,6 +352,30 @@ void main() {
 
   group('account disconnect', () {
     test(
+      'clears history after an in-flight save completes during disconnect',
+      () async {
+        final store = DelayedSaveProgressionStore();
+        final bloc = IntelligenceBloc(store, clock: () => now);
+
+        bloc.add(connectedSource(activities: [activity(id: 'merge')]));
+        await store.saveStarted.future.timeout(const Duration(seconds: 2));
+
+        bloc.add(const IntelligenceAccountDisconnected('github:octocat'));
+        // Let the disconnect handler queue its clear behind the active save.
+        await Future<void>.delayed(Duration.zero);
+        store.releaseSave.complete();
+
+        await waitFor(
+          bloc,
+          (_) => store.load('github:octocat') == ProgressionRecord.empty,
+        );
+
+        expect(store.load('github:octocat'), ProgressionRecord.empty);
+        await bloc.close();
+      },
+    );
+
+    test(
       'clears one account history without affecting the active account',
       () async {
         final store = InMemoryProgressionStore();
