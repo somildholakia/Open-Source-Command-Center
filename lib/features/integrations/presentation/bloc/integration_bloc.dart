@@ -213,6 +213,23 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     return '${record!.providerId}:$username';
   }
 
+  /// Resolves the account to clean up even when sign-out races startup restore.
+  ///
+  /// During startup, [state.connection] may still be null while the persisted
+  /// connection record already identifies the account whose snapshots must be
+  /// removed from this device.
+  Future<String?> _accountIdForCleanup() async {
+    final activeAccountId = _accountCacheId(state.connection);
+    if (activeAccountId != null) return activeAccountId;
+
+    try {
+      final persistedRecord = (await _store()).load();
+      return _accountCacheId(persistedRecord);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Clears persisted connection metadata and that account's cached data.
   ///
   /// [generation] prevents a delayed startup cleanup from erasing a newer
@@ -616,25 +633,37 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     IntegrationDisconnectRequested event,
     Emitter<IntegrationState> emit,
   ) async {
-    ++_lifecycleGeneration;
-    final accountId = _accountCacheId(state.connection);
+    final generation = ++_lifecycleGeneration;
+    final accountId = await _accountIdForCleanup();
+    if (generation != _lifecycleGeneration) return;
+
     if (accountId != null) {
       try {
-        await (await _snapshotStoreFactory()).clearAccount(accountId);
+        final cache = await _snapshotStoreFactory();
+        if (generation != _lifecycleGeneration) return;
+        await cache.clearAccount(accountId);
       } catch (_) {
         // Disconnect must still complete when local cache cleanup fails.
       }
     }
+    if (generation != _lifecycleGeneration) return;
+
     try {
-      await (await _store()).clear();
+      final store = await _store();
+      if (generation != _lifecycleGeneration) return;
+      await store.clear();
     } catch (_) {
       // Local metadata must not prevent the disconnect.
     }
+    if (generation != _lifecycleGeneration) return;
+
     try {
       await provider.disconnect();
     } catch (_) {
       // Best-effort; local state is cleared regardless.
     }
+    if (generation != _lifecycleGeneration) return;
+
     emit(const IntegrationState(phase: IntegrationPhase.disconnected));
   }
 
@@ -765,23 +794,36 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     IntegrationResetRequested event,
     Emitter<IntegrationState> emit,
   ) async {
-    ++_lifecycleGeneration;
+    final generation = ++_lifecycleGeneration;
     // Signing out must not leave the previous account's cached provider data
-    // on a shared device. Clear only the active account's snapshots.
-    final accountId = _accountCacheId(state.connection);
+    // on a shared device. The persisted record is also checked when startup
+    // has not restored it into state yet.
+    final accountId = await _accountIdForCleanup();
+    if (generation != _lifecycleGeneration) return;
+
     if (accountId != null) {
       try {
-        await (await _snapshotStoreFactory()).clearAccount(accountId);
+        final cache = await _snapshotStoreFactory();
+        if (generation != _lifecycleGeneration) return;
+        await cache.clearAccount(accountId);
       } catch (_) {
         // A local-storage failure must not prevent sign-out.
       }
     }
+    if (generation != _lifecycleGeneration) return;
+
     try {
-      await (await _store()).clear();
+      final store = await _store();
+      if (generation != _lifecycleGeneration) return;
+      await store.clear();
     } catch (_) {}
+    if (generation != _lifecycleGeneration) return;
+
     try {
       await provider.disconnect();
     } catch (_) {}
+    if (generation != _lifecycleGeneration) return;
+
     emit(const IntegrationState(phase: IntegrationPhase.disconnected));
   }
 
