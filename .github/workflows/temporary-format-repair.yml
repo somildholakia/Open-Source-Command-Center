@@ -1,0 +1,45 @@
+name: Temporary formatter repair
+
+on:
+  push:
+    branches:
+      - feature/cartoon-local-first-redesign
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-format-repair
+  cancel-in-progress: false
+
+jobs:
+  format:
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 20
+    steps:
+      - name: Check out trusted feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/cartoon-local-first-redesign
+          persist-credentials: true
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          cache: false
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Apply Dart formatter
+        run: dart format lib test
+      - name: Commit formatting changes if needed
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "All Dart files already formatted."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib test
+          git commit -m "style: apply Dart formatter"
+          git push origin HEAD:feature/cartoon-local-first-redesign
