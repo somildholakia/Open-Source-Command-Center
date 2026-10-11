@@ -54,8 +54,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (!kDebugMode || FirebaseService.instance.isInitialized) {
       emit(
         const AuthError(
-          message:
-              'Local preview is only available in debug builds without Firebase.',
+          message: 'Local preview is only available in debug builds without Firebase.',
           type: AuthErrorType.unknown,
         ),
       );

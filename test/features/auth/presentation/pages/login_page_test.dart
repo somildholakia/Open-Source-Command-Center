@@ -38,10 +38,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Preview app (local demo)'), findsOneWidget);
-      expect(
-        find.textContaining('Debug preview only'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Debug preview only'), findsOneWidget);
     });
 
     testWidgets('renders all essential login elements', (

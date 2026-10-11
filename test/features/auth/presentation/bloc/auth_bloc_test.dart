@@ -43,20 +43,23 @@ void main() {
       expect(authBloc.state, equals(const AuthInitial()));
     });
 
-    test('starts a local preview session when Firebase is unavailable', () async {
-      expectLater(
-        authBloc.stream,
-        emits(
-          isA<AuthAuthenticated>().having(
-            (state) => state.user.uid,
-            'demo uid',
-            'local-demo',
+    test(
+      'starts a local preview session when Firebase is unavailable',
+      () async {
+        expectLater(
+          authBloc.stream,
+          emits(
+            isA<AuthAuthenticated>().having(
+              (state) => state.user.uid,
+              'demo uid',
+              'local-demo',
+            ),
           ),
-        ),
-      );
+        );
 
-      authBloc.add(const AuthDemoSessionRequested());
-    });
+        authBloc.add(const AuthDemoSessionRequested());
+      },
+    );
 
     group('AuthCheckRequested', () {
       test(

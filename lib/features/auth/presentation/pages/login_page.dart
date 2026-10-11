@@ -151,7 +151,8 @@ class _LoginPageState extends State<LoginPage> {
 
                   // A debug-only local entry point keeps the UI inspectable
                   // when this build intentionally has no Firebase config.
-                  if (kDebugMode && !FirebaseService.instance.isInitialized) ...[
+                  if (kDebugMode &&
+                      !FirebaseService.instance.isInitialized) ...[
                     OutlinedButton.icon(
                       onPressed: isLoading
                           ? null
