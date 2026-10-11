@@ -132,10 +132,10 @@ void main() {
       // Repositories section stays hidden while disconnected
       expect(find.text('REPOSITORIES'), findsNothing);
 
-      // Attention Feed Placeholder
+      // No fake attention status is shown before GitHub is connected.
       expect(find.byType(AttentionFeedPlaceholder), findsOneWidget);
-      expect(find.text('NEEDS ATTENTION'), findsOneWidget);
-      expect(find.text('All queues clear'), findsOneWidget);
+      expect(find.text('INBOX & CI STATUS'), findsNothing);
+      expect(find.text('All queues clear'), findsNothing);
     });
 
     testWidgets('displays dynamic authenticated user displayName in header', (
@@ -223,6 +223,9 @@ void main() {
       // Connected banner replaces the connect CTA.
       expect(find.text('@octocat'), findsOneWidget);
       expect(find.text('Connect GitHub Account'), findsNothing);
+      expect(find.text('INBOX & CI STATUS'), findsOneWidget);
+      expect(find.text('NOT SYNCED'), findsOneWidget);
+      expect(find.text('All queues clear'), findsNothing);
 
       // Live telemetry counted from normalized activity.
       expect(find.text('LAST 5 EVENTS'), findsOneWidget);
