@@ -284,10 +284,7 @@ void main() {
           return http.Response('not found', 404);
         });
         final tokenStore = GitHubTokenStore();
-        final provider = buildProvider(
-          client: client,
-          tokenStore: tokenStore,
-        );
+        final provider = buildProvider(client: client, tokenStore: tokenStore);
 
         final connecting = provider.connect();
         await pollStarted.future;
