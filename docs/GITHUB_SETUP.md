@@ -179,9 +179,10 @@ with a confirmation dialog). Disconnecting:
 If secure storage cannot confirm token deletion, the app reports a disconnect
 error instead of claiming success and preserves the local connection record
 and account context so the user can retry. When secure storage accepts the
-tombstone, automatic token restoration is blocked while cleanup is pending.
-Resolve the device's secure-storage issue and retry; GitHub authorization on
-the website is not revoked by a local disconnect.
+tombstone, automatic token restoration is blocked while cleanup is pending; a
+successful new authorization clears that marker. Resolve the device's
+secure-storage issue and retry; GitHub authorization on the website is not
+revoked by a local disconnect.
 
 The GitHub authorization itself remains on the user's GitHub account until they
 revoke it in **GitHub → Settings → Applications**; the app cannot revoke it
