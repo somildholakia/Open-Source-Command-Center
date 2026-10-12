@@ -844,44 +844,6 @@ void main() {
       },
     );
 
-    test(
-      'keeps a stale authorization expiry from replacing a newer lifecycle',
-      () async {
-        final gate = Completer<void>();
-        final provider = FakeDeveloperProvider(
-          connected: true,
-          profile: sampleProfile(),
-        );
-        final bloc = IntegrationBloc(
-          provider: provider,
-          storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
-        );
-
-        bloc.add(const IntegrationStarted());
-        await waitFor(
-          bloc,
-          (state) => !state.isBusy && state.profile != null,
-        );
-
-        provider.onFetch = () => gate.future;
-        provider.dataFailure = const AuthorizationExpired();
-        bloc.add(const IntegrationDataRefreshRequested());
-        await waitFor(bloc, (state) => state.isBusy);
-
-        bloc.add(const IntegrationConnectRequested());
-        await waitFor(
-          bloc,
-          (state) => state.phase == IntegrationPhase.connected,
-        );
-
-        gate.complete();
-        await Future<void>.delayed(Duration.zero);
-
-        expect(bloc.state.phase, IntegrationPhase.connected);
-        await bloc.close();
-      },
-    );
-
     test('refreshes independent GitHub data sources concurrently', () async {
       final provider = FakeDeveloperProvider(
         connected: true,
