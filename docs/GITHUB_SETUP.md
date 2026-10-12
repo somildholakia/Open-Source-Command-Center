@@ -159,6 +159,7 @@ Expected manual flow:
 | `device_flow_disabled` | Device flow not enabled on the OAuth App | Enable it (section 1, step 5) |
 | `access_denied` | User rejected the request | Retry the connect flow |
 | `expired_token` / code expired | Device code lifetime elapsed | Tap **Connect** again for a fresh code |
+| Token rejected but cleanup fails | Secure storage cannot remove the saved credential | Resolve the device storage issue and retry disconnect; the app reports an error rather than claiming success |
 | `slow_down` | Polling too fast | Automatic — the app increases its interval and continues |
 | `rate_limited` with reset time | GitHub API limit reached | Wait until the shown reset time; the app shows the typed state |
 | Identity linking error (non-fatal) | Firebase GitHub provider not enabled | Section 3 (optional) |
