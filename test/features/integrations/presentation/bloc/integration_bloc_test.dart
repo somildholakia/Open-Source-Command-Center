@@ -844,6 +844,50 @@ void main() {
       },
     );
 
+    test(
+      'does not disconnect a newer connection when stale refresh reports expiry',
+      () async {
+        final gate = Completer<void>();
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          profile: sampleProfile(),
+        );
+        final store = InMemoryConnectionStore(connectedRecord());
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => store,
+        );
+
+        bloc.add(const IntegrationStarted());
+        await waitFor(bloc, (state) => !state.isBusy && state.profile != null);
+
+        provider.onFetch = () => gate.future;
+        provider.dataFailure = const AuthorizationExpired();
+        bloc.add(const IntegrationDataRefreshRequested());
+        await waitFor(bloc, (state) => state.isBusy);
+
+        bloc.add(const IntegrationConnectRequested());
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.connected &&
+              state.connection?.account?.username == 'octocat',
+        );
+        final disconnectsBeforeRelease = provider.disconnectCalls;
+
+        gate.complete();
+        await waitFor(
+          bloc,
+          (state) => !state.isBusy && state.phase == IntegrationPhase.connected,
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(provider.disconnectCalls, disconnectsBeforeRelease);
+        expect(bloc.state.phase, IntegrationPhase.connected);
+        expect(bloc.state.connection?.account?.username, 'octocat');
+        await bloc.close();
+      },
+    );
+
     test('refreshes independent GitHub data sources concurrently', () async {
       final provider = FakeDeveloperProvider(
         connected: true,
