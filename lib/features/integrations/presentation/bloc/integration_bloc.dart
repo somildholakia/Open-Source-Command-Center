@@ -27,6 +27,11 @@ class IntegrationCancelConnectRequested extends IntegrationEvent {
   const IntegrationCancelConnectRequested();
 }
 
+/// App returned to the foreground while GitHub device authorization was open.
+class IntegrationAuthorizationResumeRequested extends IntegrationEvent {
+  const IntegrationAuthorizationResumeRequested();
+}
+
 /// User disconnected the provider.
 class IntegrationDisconnectRequested extends IntegrationEvent {
   const IntegrationDisconnectRequested();
@@ -189,6 +194,9 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     on<IntegrationStarted>(_onStarted);
     on<IntegrationConnectRequested>(_onConnectRequested);
     on<IntegrationCancelConnectRequested>(_onCancelConnectRequested);
+    on<IntegrationAuthorizationResumeRequested>(
+      _onAuthorizationResumeRequested,
+    );
     on<IntegrationDisconnectRequested>(_onDisconnectRequested);
     on<IntegrationDataRefreshRequested>(_onDataRefreshRequested);
     on<IntegrationResetRequested>(_onResetRequested);
@@ -680,6 +688,28 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
         ),
       );
     }
+  }
+
+  Future<void> _onAuthorizationResumeRequested(
+    IntegrationAuthorizationResumeRequested event,
+    Emitter<IntegrationState> emit,
+  ) async {
+    // GitHub Device Flow does not redirect the browser back to the app.
+    // On resume, check whether approval completed while the app was backgrounded.
+    if (state.phase != IntegrationPhase.connecting) return;
+
+    try {
+      if (!await provider.isConnected()) return;
+    } on ProviderFailure {
+      // Keep the authorization prompt alive; the normal polling path can
+      // still report any actionable storage/network error.
+      return;
+    }
+
+    // A token is now stored. Let startup restoration rebuild the UI even if
+    // the original connect flow was interrupted while the app was backgrounded.
+    _lifecycleGeneration++;
+    add(const IntegrationStarted());
   }
 
   Future<void> _onCancelConnectRequested(
