@@ -507,8 +507,9 @@ void main() {
 
       expect(store.record, isNotNull);
       expect(linker.unlinkCalls, 0);
-      // A failed secure delete must preserve the connection for a retry.
-      expect(await provider.isConnected(), isTrue);
+      // The token remains stored, but the tombstone blocks its restoration.
+      expect(await tokenStore.hasToken(), isTrue);
+      expect(await provider.isConnected(), isFalse);
     });
 
     test('is idempotent when nothing is connected', () async {

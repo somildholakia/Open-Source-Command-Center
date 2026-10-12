@@ -48,6 +48,20 @@ void main() {
       expect(await tokenStore.read(), isEmpty);
     });
 
+    test('blocks token restoration after deletion fails', () async {
+      final storage = createSecureStorage(failDelete: true);
+      await storage.write(
+        key: 'github_oauth_access_token',
+        value: 'saved-token',
+      );
+      final tokenStore = GitHubTokenStore(storage: storage);
+
+      await expectLater(tokenStore.clear(), throwsA(isA<StateError>()));
+
+      expect(await tokenStore.hasToken(), isTrue);
+      expect(await tokenStore.read(), isEmpty);
+    });
+
     test('propagates secure-storage delete failures', () async {
       final storage = _FailingSecureStorage();
       when(() => storage.delete(key: any(named: 'key')))

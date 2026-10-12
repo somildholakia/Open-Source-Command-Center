@@ -12,6 +12,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// without the platform channel.
 class GitHubTokenStore {
   static const String _key = 'github_oauth_access_token';
+  static const String _disconnectPendingKey = 'github_disconnect_pending';
 
   final FlutterSecureStorage _storage;
 
@@ -32,6 +33,10 @@ class GitHubTokenStore {
   /// Storage errors are propagated so callers can distinguish an unavailable
   /// secure store from a genuinely disconnected account.
   Future<String> read() async {
+    // A tombstone prevents a credential that could not be deleted from being
+    // restored and used on a later launch or by a different app session.
+    final disconnectPending = await _storage.read(key: _disconnectPendingKey);
+    if (disconnectPending == 'true') return '';
     return await _storage.read(key: _key) ?? '';
   }
 
@@ -42,6 +47,7 @@ class GitHubTokenStore {
   /// mock store rather than relying on a non-persistent credential fallback.
   Future<void> write(String token) async {
     await _storage.write(key: _key, value: token);
+    await _storage.delete(key: _disconnectPendingKey);
   }
 
   /// Removes the token.
@@ -49,6 +55,18 @@ class GitHubTokenStore {
   /// Deletion failures propagate so callers never claim the account is fully
   /// disconnected while the credential may still be present on the device.
   Future<void> clear() async {
-    await _storage.delete(key: _key);
+    try {
+      await _storage.delete(key: _key);
+      await _storage.delete(key: _disconnectPendingKey);
+    } catch (_) {
+      // Best-effort tombstone: even if token deletion fails, prevent the app
+      // from restoring the saved token until the user retries cleanup.
+      try {
+        await _storage.write(key: _disconnectPendingKey, value: 'true');
+      } catch (_) {
+        // Secure storage may be completely unavailable.
+      }
+      rethrow;
+    }
   }
 }
