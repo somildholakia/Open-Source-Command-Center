@@ -70,9 +70,9 @@ void main() {
     );
 
     test(
-      'rejects empty codes and non-positive polling metadata',
+      'rejects empty device codes',
       () async {
-        final missingCode = clientReturning([
+        final client = clientReturning([
           http.Response(
             jsonEncode({
               'device_code': '',
@@ -84,12 +84,18 @@ void main() {
             200,
           ),
         ]);
+
         await expectLater(
-          missingCode.start(),
+          client.start(),
           throwsA(isA<ApiUnavailable>()),
         );
+      },
+    );
 
-        final invalidTiming = clientReturning([
+    test(
+      'rejects non-positive polling metadata',
+      () async {
+        final client = clientReturning([
           http.Response(
             jsonEncode({
               'device_code': 'device-123',
@@ -101,8 +107,9 @@ void main() {
             200,
           ),
         ]);
+
         await expectLater(
-          invalidTiming.start(),
+          client.start(),
           throwsA(isA<ApiUnavailable>()),
         );
       },
