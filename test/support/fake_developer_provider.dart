@@ -16,6 +16,7 @@ class FakeDeveloperProvider implements DeveloperProvider {
     this.contributions,
     this.connectFailure,
     this.dataFailure,
+    this.disconnectFailure,
   }) : repositories = repositories ?? const [],
        activities = activities ?? const [];
 
@@ -38,6 +39,9 @@ class FakeDeveloperProvider implements DeveloperProvider {
 
   /// When set, data capabilities throw this instead of returning data.
   ProviderFailure? dataFailure;
+
+  /// When set, [disconnect] throws this to simulate cleanup failures.
+  ProviderFailure? disconnectFailure;
 
   /// When set, [connect] awaits this before returning (test-controlled).
   Future<void> Function()? onConnect;
@@ -105,6 +109,8 @@ class FakeDeveloperProvider implements DeveloperProvider {
   @override
   Future<void> disconnect() async {
     disconnectCalls++;
+    final failure = disconnectFailure;
+    if (failure != null) throw failure;
     connected = false;
   }
 
