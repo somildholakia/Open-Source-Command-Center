@@ -855,6 +855,24 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     final accountId = await _accountIdForCleanup();
     if (generation != _lifecycleGeneration) return;
 
+    // Do not erase the only local connection metadata before secure credential
+    // deletion succeeds; an error state lets the user retry cleanup.
+    try {
+      await provider.disconnect();
+    } catch (_) {
+      if (generation != _lifecycleGeneration) return;
+      emit(
+        const IntegrationState(
+          phase: IntegrationPhase.error,
+          failure: UnknownProviderError(
+            detail: 'Could not confirm GitHub credential removal.',
+          ),
+        ),
+      );
+      return;
+    }
+    if (generation != _lifecycleGeneration) return;
+
     if (accountId != null) {
       try {
         final cache = await _snapshotStoreFactory();
@@ -870,22 +888,8 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
       final store = await _store();
       if (generation != _lifecycleGeneration) return;
       await store.clear();
-    } catch (_) {}
-    if (generation != _lifecycleGeneration) return;
-
-    try {
-      await provider.disconnect();
     } catch (_) {
-      if (generation != _lifecycleGeneration) return;
-      emit(
-        const IntegrationState(
-          phase: IntegrationPhase.error,
-          failure: UnknownProviderError(
-            detail: 'Could not confirm GitHub credential removal.',
-          ),
-        ),
-      );
-      return;
+      // Local metadata cleanup is best-effort after credential deletion.
     }
     if (generation != _lifecycleGeneration) return;
 
