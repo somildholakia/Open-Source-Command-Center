@@ -50,8 +50,9 @@ void main() {
 
     test('propagates secure-storage delete failures', () async {
       final storage = _FailingSecureStorage();
-      when(() => storage.delete(key: any(named: 'key')))
-          .thenThrow(StateError('secure storage unavailable'));
+      when(
+        () => storage.delete(key: any(named: 'key')),
+      ).thenThrow(StateError('secure storage unavailable'));
 
       final tokenStore = GitHubTokenStore(storage: storage);
 
