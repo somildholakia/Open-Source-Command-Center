@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:opensource_command_center/domain/domain.dart';
@@ -16,8 +14,6 @@ import '../../support/in_memory_connection_store.dart';
 import '../../support/secure_storage_test_helper.dart';
 
 /// Records Firebase link/unlink calls without touching Firebase.
-class _MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
-
 class FakeGitHubFirebaseLinker implements GitHubFirebaseLinker {
   int linkCalls = 0;
   int unlinkCalls = 0;
@@ -211,7 +207,7 @@ void main() {
     });
 
     test('hydrates the saved token before restored API requests', () async {
-      final tokenStore = GitHubTokenStore(storage: _MockFlutterSecureStorage());
+      final tokenStore = GitHubTokenStore(storage: createSecureStorage());
       final store = InMemoryConnectionStore();
       final firstProvider = buildProvider(
         client: githubMock(),
@@ -243,7 +239,7 @@ void main() {
             client: githubMock(),
             clientId: '',
           ),
-          tokenStore: GitHubTokenStore(storage: _MockFlutterSecureStorage()),
+          tokenStore: GitHubTokenStore(storage: createSecureStorage()),
           firebaseLinker: FakeGitHubFirebaseLinker(),
           connectionStoreFactory: () async => InMemoryConnectionStore(),
         );
@@ -288,7 +284,7 @@ void main() {
           }
           return http.Response('not found', 404);
         });
-        final tokenStore = GitHubTokenStore(storage: _MockFlutterSecureStorage());
+        final tokenStore = GitHubTokenStore(storage: createSecureStorage());
         final provider = buildProvider(client: client, tokenStore: tokenStore);
 
         final connecting = provider.connect();
@@ -345,7 +341,7 @@ void main() {
             return http.Response('not found', 404);
         }
       });
-      final tokenStore = GitHubTokenStore(storage: _MockFlutterSecureStorage());
+      final tokenStore = GitHubTokenStore(storage: createSecureStorage());
       final store = InMemoryConnectionStore();
       final linker = FakeGitHubFirebaseLinker();
       final provider = buildProvider(
