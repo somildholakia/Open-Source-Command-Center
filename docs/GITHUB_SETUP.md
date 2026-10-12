@@ -176,9 +176,9 @@ with a confirmation dialog). Disconnecting:
   states.
 
 If secure storage cannot confirm token deletion, the app reports a disconnect
-error instead of claiming success. Retry after resolving the device's secure
-storage issue; GitHub authorization on the website is not revoked by a local
-disconnect.
+error instead of claiming success and preserves the local connection record so
+the user can retry. Resolve the device's secure-storage issue and retry; GitHub
+authorization on the website is not revoked by a local disconnect.
 
 The GitHub authorization itself remains on the user's GitHub account until they
 revoke it in **GitHub → Settings → Applications**; the app cannot revoke it
