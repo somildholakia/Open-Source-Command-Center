@@ -858,7 +858,10 @@ void main() {
         );
 
         bloc.add(const IntegrationStarted());
-        await waitFor(bloc, (state) => !state.isBusy && state.profile != null);
+        await waitFor(
+          bloc,
+          (state) => !state.isBusy && state.profile != null,
+        );
 
         provider.onFetch = () => gate.future;
         provider.dataFailure = const AuthorizationExpired();
@@ -866,7 +869,10 @@ void main() {
         await waitFor(bloc, (state) => state.isBusy);
 
         bloc.add(const IntegrationConnectRequested());
-        await waitFor(bloc, (state) => state.phase == IntegrationPhase.connected);
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.connected,
+        );
 
         gate.complete();
         await Future<void>.delayed(Duration.zero);
