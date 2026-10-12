@@ -60,6 +60,9 @@ void main() {
 
       expect(await tokenStore.hasToken(), isTrue);
       expect(await tokenStore.read(), isEmpty);
+
+      await tokenStore.write('replacement-token');
+      expect(await tokenStore.read(), 'replacement-token');
     });
 
     test('propagates secure-storage delete failures', () async {
