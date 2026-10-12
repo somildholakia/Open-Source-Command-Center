@@ -864,7 +864,10 @@ void main() {
         );
 
         bloc.add(const IntegrationStarted());
-        await waitFor(bloc, (state) => !state.isBusy && state.profile != null);
+        await waitFor(
+          bloc,
+          (state) => !state.isBusy && state.profile != null,
+        );
 
         provider.dataFailure = const AuthorizationExpired();
         bloc.add(const IntegrationDataRefreshRequested());
