@@ -209,14 +209,30 @@ class GitHubProvider implements DeveloperProvider {
     _authorizationCancelled = true;
     _authorizationGeneration++;
     _accessToken = '';
-    await _tokenStore.clear();
+
+    Object? credentialClearFailure;
+    try {
+      await _tokenStore.clear();
+    } catch (error) {
+      // Continue cleaning metadata and Firebase, but never report a complete
+      // disconnect when the credential may still be persisted on this device.
+      credentialClearFailure = error;
+    }
+
     try {
       final store = await _connectionStoreFactory();
       await store.clear();
     } catch (_) {
-      // Store unavailable (e.g. test host) — token already cleared.
+      // Best-effort metadata cleanup; secure credential deletion is separate.
     }
+
     await _firebaseLinker.unlinkGitHub();
+
+    if (credentialClearFailure != null) {
+      throw UnknownProviderError(
+        detail: 'Could not securely remove the saved GitHub credential.',
+      );
+    }
   }
 
   // ---------------------------------------------------------------------------
