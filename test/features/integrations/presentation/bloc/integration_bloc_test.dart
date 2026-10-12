@@ -660,16 +660,10 @@ void main() {
         );
 
         bloc.add(const IntegrationConnectRequested());
-        await waitFor(
-          bloc,
-          (state) => provider.connectCalls == 1,
-        );
+        await waitFor(bloc, (state) => provider.connectCalls == 1);
 
         bloc.add(const IntegrationConnectRequested());
-        await waitFor(
-          bloc,
-          (state) => provider.connectCalls == 2,
-        );
+        await waitFor(bloc, (state) => provider.connectCalls == 2);
 
         firstGate.complete();
         await Future<void>.delayed(Duration.zero);

@@ -64,12 +64,6 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
-      - name: Show formatter diff for integration regression test
-        shell: bash
-        run: |
-          dart format --output=show test/features/integrations/presentation/bloc/integration_bloc_test.dart > /tmp/formatted_integration_test.dart
-          diff -u test/features/integrations/presentation/bloc/integration_bloc_test.dart /tmp/formatted_integration_test.dart || true
-
       - name: Check Dart formatting
         run: dart format --output=none --set-exit-if-changed lib test
 
