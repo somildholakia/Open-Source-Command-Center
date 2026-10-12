@@ -844,6 +844,46 @@ void main() {
       },
     );
 
+    test(
+      'does not emit expired after lifecycle changes during provider disconnect',
+      () async {
+        final disconnectGate = Completer<void>();
+        final disconnectStarted = Completer<void>();
+        final provider = FakeDeveloperProvider(
+          connected: true,
+          profile: sampleProfile(),
+        )..onDisconnect = () async {
+            if (!disconnectStarted.isCompleted) {
+              disconnectStarted.complete();
+            }
+            await disconnectGate.future;
+          };
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+        );
+
+        bloc.add(const IntegrationStarted());
+        await waitFor(bloc, (state) => !state.isBusy && state.profile != null);
+
+        provider.dataFailure = const AuthorizationExpired();
+        bloc.add(const IntegrationDataRefreshRequested());
+        await disconnectStarted.future;
+
+        bloc.add(const IntegrationConnectRequested());
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.connected,
+        );
+
+        disconnectGate.complete();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(bloc.state.phase, IntegrationPhase.connected);
+        await bloc.close();
+      },
+    );
+
     test('refreshes independent GitHub data sources concurrently', () async {
       final provider = FakeDeveloperProvider(
         connected: true,
