@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -88,13 +89,39 @@ class GitHubAuthorizationPromptCard extends StatelessWidget {
                     borderRadius: AppSpacing.borderRadiusSm,
                     border: Border.all(color: colorScheme.outline),
                   ),
-                  child: Text(
-                    prompt!.userCode!,
-                    textAlign: TextAlign.center,
-                    style: AppTypography.monoLarge.copyWith(
-                      color: colorScheme.onSurface,
-                      letterSpacing: 4,
-                    ),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 44),
+                      Expanded(
+                        child: SelectableText(
+                          prompt!.userCode!,
+                          textAlign: TextAlign.center,
+                          style: AppTypography.monoLarge.copyWith(
+                            color: colorScheme.onSurface,
+                            letterSpacing: 4,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Copy device code',
+                        visualDensity: VisualDensity.compact,
+                        icon: const Icon(Icons.copy_rounded, size: 20),
+                        onPressed: () async {
+                          await Clipboard.setData(
+                            ClipboardData(text: prompt.userCode!),
+                          );
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context)
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              const SnackBar(
+                                content: Text('GitHub device code copied'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                        },
+                      ),
+                    ],
                   ),
                 ),
                 if (prompt.expiresAt != null) ...[
