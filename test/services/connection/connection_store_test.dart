@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:opensource_command_center/domain/domain.dart';
 import 'package:opensource_command_center/services/connection/connection_store.dart';
 import 'package:opensource_command_center/services/github/github_token_store.dart';
@@ -99,7 +98,7 @@ void main() {
   });
 }
 
-class _FakeSecureStorage extends Fake implements FlutterSecureStorage {
+class _FakeSecureStorage implements FlutterSecureStorage {
   final Map<String, String> _values = {};
 
   @override
