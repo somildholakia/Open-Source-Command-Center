@@ -65,8 +65,7 @@ void main() {
       expect(await tokenStore.read(), 'replacement-token');
     });
 
-
-    test('treats an empty stored token as unavailable', () async {
+    test('treats an empty stored token as unavailable, () async {
       final storage = createSecureStorage();
       await storage.write(key: 'github_oauth_access_token', value: '');
       final tokenStore = GitHubTokenStore(storage: storage);
