@@ -1009,6 +1009,31 @@ void main() {
         await bloc.close();
       },
     );
+    test('reset surfaces provider credential cleanup failures', () async {
+      SharedPreferences.setMockInitialValues({});
+      final provider = FakeDeveloperProvider(
+        connected: true,
+        disconnectFailure: const UnknownProviderError(
+          detail: 'secure credential deletion failed',
+        ),
+      );
+      final bloc = IntegrationBloc(
+        provider: provider,
+        storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+      );
+
+      bloc.add(const IntegrationResetRequested());
+      await waitFor(
+        bloc,
+        (state) =>
+            state.phase == IntegrationPhase.error && state.failure != null,
+      );
+
+      expect(bloc.state.failure, isA<UnknownProviderError>());
+      expect(provider.disconnectCalls, 1);
+      await bloc.close();
+    });
+
     test('reset clears active account snapshots on sign-out', () async {
       SharedPreferences.setMockInitialValues({});
       final preferences = await SharedPreferences.getInstance();
