@@ -96,21 +96,37 @@ class GitHubDeviceFlowClient {
         );
       }
 
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final error = body['error'] as String?;
-      if (error != null) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        throw const ApiUnavailable();
+      }
+      final body = decoded;
+      final error = body['error'];
+      if (error is String && error.isNotEmpty) {
+        final description = body['error_description'];
         throw AuthenticationFailed(
-          detail: body['error_description'] as String? ?? error,
+          detail: description is String && description.isNotEmpty
+              ? description
+              : error,
         );
       }
 
-      final deviceCode = body['device_code'] as String?;
-      final userCode = body['user_code'] as String?;
-      final verificationUri = body['verification_uri'] as String?;
-      final interval = (body['interval'] as num?)?.toInt() ?? 5;
-      final expiresIn = (body['expires_in'] as num?)?.toInt() ?? 900;
+      final deviceCode = body['device_code'];
+      final userCode = body['user_code'];
+      final verificationUri = body['verification_uri'];
+      final rawInterval = body['interval'];
+      final rawExpiresIn = body['expires_in'];
+      final interval = rawInterval is num ? rawInterval.toInt() : 5;
+      final expiresIn = rawExpiresIn is num ? rawExpiresIn.toInt() : 900;
 
-      if (deviceCode == null || userCode == null || verificationUri == null) {
+      if (deviceCode is! String ||
+          deviceCode.isEmpty ||
+          userCode is! String ||
+          userCode.isEmpty ||
+          verificationUri is! String ||
+          verificationUri.isEmpty ||
+          interval < 1 ||
+          expiresIn < 1) {
         throw const ApiUnavailable();
       }
 
