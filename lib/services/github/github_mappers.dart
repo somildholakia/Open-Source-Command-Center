@@ -257,11 +257,19 @@ class GitHubMappers {
 
   /// Maps a list of event payloads, dropping unsupported entries.
   static List<DeveloperActivity> activitiesFromJson(List<dynamic> jsonList) {
-    return jsonList
-        .whereType<Map<String, dynamic>>()
-        .map(activityFromJson)
-        .whereType<DeveloperActivity>()
-        .toList(growable: false);
+    final activities = <DeveloperActivity>[];
+    for (final item in jsonList) {
+      if (item is! Map<String, dynamic>) continue;
+      try {
+        final activity = activityFromJson(item);
+        if (activity != null) activities.add(activity);
+      } on TypeError {
+        // Ignore malformed event payloads without discarding valid activity.
+      } on FormatException {
+        // Bad individual fields must not fail the entire timeline refresh.
+      }
+    }
+    return activities.toList(growable: false);
   }
 
   // ---------------------------------------------------------------------------
