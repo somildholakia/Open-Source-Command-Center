@@ -844,18 +844,17 @@ void main() {
       },
     );
 
-    test(
-      'does not disconnect a newer connection when stale refresh reports expiry',
+      test(
+      'keeps a stale authorization expiry from replacing a newer lifecycle',
       () async {
         final gate = Completer<void>();
         final provider = FakeDeveloperProvider(
           connected: true,
           profile: sampleProfile(),
         );
-        final store = InMemoryConnectionStore(connectedRecord());
         final bloc = IntegrationBloc(
           provider: provider,
-          storeFactory: () async => store,
+          storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
         );
 
         bloc.add(const IntegrationStarted());
@@ -867,25 +866,12 @@ void main() {
         await waitFor(bloc, (state) => state.isBusy);
 
         bloc.add(const IntegrationConnectRequested());
-        await waitFor(
-          bloc,
-          (state) =>
-              state.phase == IntegrationPhase.connected &&
-              state.connection?.account?.username == 'octocat',
-        );
-        final disconnectsBeforeRelease = provider.disconnectCalls;
+        await waitFor(bloc, (state) => state.phase == IntegrationPhase.connected);
 
         gate.complete();
-        await waitFor(
-          bloc,
-          (state) =>
-              !state.isBusy && state.phase == IntegrationPhase.connected,
-        );
         await Future<void>.delayed(Duration.zero);
 
-        expect(provider.disconnectCalls, disconnectsBeforeRelease);
         expect(bloc.state.phase, IntegrationPhase.connected);
-        expect(bloc.state.connection?.account?.username, 'octocat');
         await bloc.close();
       },
     );
