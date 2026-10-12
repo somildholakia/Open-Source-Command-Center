@@ -570,7 +570,18 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
       // so a later launch cannot resurrect a disconnected account.
       try {
         await provider.disconnect();
-      } catch (_) {}
+      } catch (_) {
+        if (generation != _lifecycleGeneration) return;
+        emit(
+          const IntegrationState(
+            phase: IntegrationPhase.error,
+            failure: UnknownProviderError(
+              detail: 'Could not confirm GitHub credential removal.',
+            ),
+          ),
+        );
+        return;
+      }
       await _clearPersistedConnection(generation: generation);
       if (generation != _lifecycleGeneration) return;
       emit(const IntegrationState(phase: IntegrationPhase.disconnected));
@@ -767,7 +778,26 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
       // The lifecycle can change while the provider disconnects (for example,
       // a user starts a new connection). Never let stale expiry tear down or
       // overwrite that newer lifecycle.
-      await provider.disconnect();
+      try {
+        await provider.disconnect();
+      } catch (_) {
+        if (!_isRefreshCurrent(generation, accountId)) {
+          await _reconcileStaleRefreshPersistence(accountId);
+          return;
+        }
+        emit(
+          state.copyWith(
+            phase: IntegrationPhase.error,
+            isLoadingData: false,
+            isRefreshing: false,
+            failure: const UnknownProviderError(
+              detail: 'Could not confirm GitHub credential removal.',
+            ),
+            isStale: true,
+          ),
+        );
+        return;
+      }
       if (!_isRefreshCurrent(generation, accountId)) {
         await _reconcileStaleRefreshPersistence(accountId);
         return;

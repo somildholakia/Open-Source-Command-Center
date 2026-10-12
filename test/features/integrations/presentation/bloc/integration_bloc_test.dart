@@ -209,6 +209,34 @@ void main() {
       },
     );
 
+    test('surfaces restore cleanup failure for a rejected token', () async {
+      final provider = FakeDeveloperProvider(
+        connected: true,
+        profile: sampleProfile(),
+        dataFailure: const AuthorizationExpired(),
+        disconnectFailure: const UnknownProviderError(
+          detail: 'secure credential deletion failed',
+        ),
+      );
+      final store = InMemoryConnectionStore();
+      final bloc = IntegrationBloc(
+        provider: provider,
+        storeFactory: () async => store,
+      );
+
+      bloc.add(const IntegrationStarted());
+      await waitFor(
+        bloc,
+        (state) =>
+            state.phase == IntegrationPhase.error && state.failure != null,
+      );
+
+      expect(bloc.state.failure, isA<UnknownProviderError>());
+      expect(provider.disconnectCalls, greaterThan(0));
+      expect(store.record, isNull);
+      await bloc.close();
+    });
+
     test('disconnects silently when the stored token was rejected', () async {
       final provider = FakeDeveloperProvider(
         connected: true,
@@ -847,6 +875,37 @@ void main() {
         await bloc.close();
       },
     );
+
+    test('preserves connection data when expiry cleanup fails', () async {
+      final store = InMemoryConnectionStore(connectedRecord());
+      final provider = FakeDeveloperProvider(
+        connected: true,
+        profile: sampleProfile(),
+      );
+      final bloc = IntegrationBloc(
+        provider: provider,
+        storeFactory: () async => store,
+      );
+
+      bloc.add(const IntegrationStarted());
+      await waitFor(bloc, (state) => !state.isBusy && state.profile != null);
+
+      provider.dataFailure = const AuthorizationExpired();
+      provider.disconnectFailure = const UnknownProviderError(
+        detail: 'secure credential deletion failed',
+      );
+      bloc.add(const IntegrationDataRefreshRequested());
+      await waitFor(
+        bloc,
+        (state) =>
+            state.phase == IntegrationPhase.error && state.failure != null,
+      );
+
+      expect(bloc.state.failure, isA<UnknownProviderError>());
+      expect(bloc.state.connection?.account?.username, 'octocat');
+      expect(store.record, isNotNull);
+      await bloc.close();
+    });
 
     test(
       'expires the connection when the provider rejects the token',
