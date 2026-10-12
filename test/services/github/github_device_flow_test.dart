@@ -69,51 +69,39 @@ void main() {
       },
     );
 
-    test(
-      'rejects empty device codes',
-      () async {
-        final client = clientReturning([
-          http.Response(
-            jsonEncode({
-              'device_code': '',
-              'user_code': 'WDJB-MJHT',
-              'verification_uri': 'https://github.com/login/device',
-              'interval': 5,
-              'expires_in': 900,
-            }),
-            200,
-          ),
-        ]);
+    test('rejects an empty device code', () async {
+      final client = clientReturning([
+        http.Response(
+          jsonEncode({
+            'device_code': '',
+            'user_code': 'WDJB-MJHT',
+            'verification_uri': 'https://github.com/login/device',
+            'interval': 5,
+            'expires_in': 900,
+          }),
+          200,
+        ),
+      ]);
 
-        await expectLater(
-          client.start(),
-          throwsA(isA<ApiUnavailable>()),
-        );
-      },
-    );
+      await expectLater(client.start(), throwsA(isA<ApiUnavailable>()));
+    });
 
-    test(
-      'rejects non-positive polling metadata',
-      () async {
-        final client = clientReturning([
-          http.Response(
-            jsonEncode({
-              'device_code': 'device-123',
-              'user_code': 'WDJB-MJHT',
-              'verification_uri': 'https://github.com/login/device',
-              'interval': 0,
-              'expires_in': 900,
-            }),
-            200,
-          ),
-        ]);
+    test('rejects non-positive polling metadata', () async {
+      final client = clientReturning([
+        http.Response(
+          jsonEncode({
+            'device_code': 'device-123',
+            'user_code': 'WDJB-MJHT',
+            'verification_uri': 'https://github.com/login/device',
+            'interval': 0,
+            'expires_in': 900,
+          }),
+          200,
+        ),
+      ]);
 
-        await expectLater(
-          client.start(),
-          throwsA(isA<ApiUnavailable>()),
-        );
-      },
-    );
+      await expectLater(client.start(), throwsA(isA<ApiUnavailable>()));
+    });
 
     test(
       'fails with a configuration message when no client id is available',
