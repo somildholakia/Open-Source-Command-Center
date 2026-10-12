@@ -158,7 +158,7 @@ void main() {
     });
   }
 
-    _MockFlutterSecureStorage secureStorage() {
+      _MockFlutterSecureStorage secureStorage() {
     final storage = _MockFlutterSecureStorage();
     final values = <String, String>{};
 
@@ -192,9 +192,7 @@ void main() {
         mOptions: any(named: 'mOptions'),
         webOptions: any(named: 'webOptions'),
       ),
-    ).thenAnswer((invocation) async {
-      return values[invocation.namedArguments[#key] as String];
-    });
+    ).thenAnswer((invocation) async => values[invocation.namedArguments[#key] as String]);
     when(
       () => storage.containsKey(
         key: any(named: 'key'),
@@ -205,9 +203,7 @@ void main() {
         mOptions: any(named: 'mOptions'),
         webOptions: any(named: 'webOptions'),
       ),
-    ).thenAnswer((invocation) async {
-      return values.containsKey(invocation.namedArguments[#key] as String);
-    });
+    ).thenAnswer((invocation) async => values.containsKey(invocation.namedArguments[#key] as String));
     when(
       () => storage.delete(
         key: any(named: 'key'),
