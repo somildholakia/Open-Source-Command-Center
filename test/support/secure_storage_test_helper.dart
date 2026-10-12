@@ -67,10 +67,11 @@ MockSecureStorage createSecureStorage({bool failDelete = false}) {
       webOptions: any(named: 'webOptions'),
     ),
   ).thenAnswer((invocation) async {
+    final key = invocation.namedArguments[#key] as String;
     if (failDelete && key == 'github_oauth_access_token') {
       throw StateError('secure storage delete failed');
     }
-    values.remove(invocation.namedArguments[#key] as String);
+    values.remove(key);
   });
 
   return storage;
