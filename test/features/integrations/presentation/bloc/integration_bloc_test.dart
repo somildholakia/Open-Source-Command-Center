@@ -547,6 +547,12 @@ void main() {
           storeFactory: () async => store,
         );
 
+        bloc.add(const IntegrationStarted());
+        await waitFor(
+          bloc,
+          (state) => !state.isBusy && state.profile != null,
+        );
+
         bloc.add(const IntegrationDisconnectRequested());
         await waitFor(
           bloc,
@@ -556,6 +562,7 @@ void main() {
 
         expect(bloc.state.failure, isA<UnknownProviderError>());
         expect(bloc.state.isConnected, isFalse);
+        expect(bloc.state.connection?.account?.username, 'octocat');
         expect(provider.disconnectCalls, 1);
         expect(store.record, isNotNull);
         await bloc.close();

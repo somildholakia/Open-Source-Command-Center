@@ -691,11 +691,14 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     } catch (_) {
       if (generation != _lifecycleGeneration) return;
       emit(
-        const IntegrationState(
+        state.copyWith(
           phase: IntegrationPhase.error,
-          failure: UnknownProviderError(
+          isLoadingData: false,
+          isRefreshing: false,
+          failure: const UnknownProviderError(
             detail: 'Could not confirm GitHub credential removal.',
           ),
+          isStale: true,
         ),
       );
       return;
