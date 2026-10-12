@@ -28,30 +28,25 @@ class GitHubTokenStore {
 
   /// Whether a token exists in secure storage.
   Future<bool> hasToken() async {
-    try {
-      return await _storage.containsKey(key: _key) || _memoryFallback != null;
-    } catch (_) {
-      return _memoryFallback != null;
-    }
+    return await _storage.containsKey(key: _key);
   }
 
-  /// Reads the token, or an empty string when absent/unavailable.
+  /// Reads the token, or an empty string when absent.
+  ///
+  /// Storage errors are propagated so callers can distinguish an unavailable
+  /// secure store from a genuinely disconnected account.
   Future<String> read() async {
-    try {
-      return await _storage.read(key: _key) ?? _memoryFallback ?? '';
-    } catch (_) {
-      return _memoryFallback ?? '';
-    }
+    return await _storage.read(key: _key) ?? '';
   }
 
   /// Writes the token to secure storage.
+  ///
+  /// Do not fall back to process memory when persistence fails: the connection
+  /// would appear successful but disappear on restart. Tests should inject a
+  /// mock store rather than relying on a non-persistent credential fallback.
   Future<void> write(String token) async {
-    try {
-      await _storage.write(key: _key, value: token);
-      _memoryFallback = null;
-    } catch (_) {
-      _memoryFallback = token;
-    }
+    await _storage.write(key: _key, value: token);
+    _memoryFallback = null;
   }
 
   /// Removes the token. Idempotent.
