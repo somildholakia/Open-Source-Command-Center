@@ -158,21 +158,19 @@ void main() {
     });
   }
 
-      _MockFlutterSecureStorage secureStorage() {
+        _MockFlutterSecureStorage secureStorage() {
     final storage = _MockFlutterSecureStorage();
     final values = <String, String>{};
-    when(
-      () => storage.write(
-        key: any(named: 'key'),
-        value: any(named: 'value'),
-        aOptions: any(named: 'aOptions'),
-        iOptions: any(named: 'iOptions'),
-        lOptions: any(named: 'lOptions'),
-        wOptions: any(named: 'wOptions'),
-        mOptions: any(named: 'mOptions'),
-        webOptions: any(named: 'webOptions'),
-      ),
-    ).thenAnswer((invocation) async {
+    when(() => storage.write(
+      key: any(named: 'key'),
+      value: any(named: 'value'),
+      aOptions: any(named: 'aOptions'),
+      iOptions: any(named: 'iOptions'),
+      lOptions: any(named: 'lOptions'),
+      wOptions: any(named: 'wOptions'),
+      mOptions: any(named: 'mOptions'),
+      webOptions: any(named: 'webOptions'),
+    )).thenAnswer((invocation) async {
       final key = invocation.namedArguments[#key] as String;
       final value = invocation.namedArguments[#value] as String?;
       if (value == null) {
