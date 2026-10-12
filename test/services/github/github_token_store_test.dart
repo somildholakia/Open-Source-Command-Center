@@ -6,8 +6,8 @@ import 'package:opensource_command_center/services/github/github_token_store.dar
 class _MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
 void main() {
-  group('GitHubTokenStore memory fallback', () {
-    test('keeps the fallback readable when secure reads later succeed without a token', () async {
+  group('GitHubTokenStore', () {
+    test('propagates secure-storage write failures', () async {
       final storage = _MockFlutterSecureStorage();
       when(
         () => storage.write(
@@ -15,52 +15,60 @@ void main() {
           value: any(named: 'value'),
         ),
       ).thenThrow(StateError('secure storage unavailable'));
-      when(() => storage.containsKey(key: any(named: 'key')))
-          .thenAnswer((_) async => false);
-      when(() => storage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => null);
 
       final tokenStore = GitHubTokenStore(storage: storage);
-      await tokenStore.write('memory-token');
 
-      expect(await tokenStore.hasToken(), isTrue);
-      expect(await tokenStore.read(), 'memory-token');
+      await expectLater(
+        tokenStore.write('sensitive-token'),
+        throwsA(isA<StateError>()),
+      );
+      verify(
+        () => storage.write(
+          key: 'github_oauth_access_token',
+          value: 'sensitive-token',
+        ),
+      ).called(1);
     });
 
-    test('clears a stale fallback after a secure write succeeds', () async {
+    test('reads and clears the secure token', () async {
       final storage = _MockFlutterSecureStorage();
-      var failWrites = true;
-      String? persistedToken;
+      String? persistedToken = 'persisted-token';
 
+      when(() => storage.containsKey(key: any(named: 'key')))
+          .thenAnswer((_) async => persistedToken != null);
+      when(() => storage.read(key: any(named: 'key')))
+          .thenAnswer((_) async => persistedToken);
+      when(() => storage.delete(key: any(named: 'key'))).thenAnswer((_) async {
+        persistedToken = null;
+      });
       when(
         () => storage.write(
           key: any(named: 'key'),
           value: any(named: 'value'),
         ),
       ).thenAnswer((invocation) async {
-        if (failWrites) {
-          throw StateError('temporary secure storage failure');
-        }
         persistedToken = invocation.namedArguments[#value] as String?;
       });
-      when(() => storage.containsKey(key: any(named: 'key')))
-          .thenAnswer((_) async => persistedToken != null);
-      when(() => storage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => persistedToken);
 
       final tokenStore = GitHubTokenStore(storage: storage);
-      await tokenStore.write('old-memory-token');
-      failWrites = false;
-      await tokenStore.write('secure-token');
 
       expect(await tokenStore.hasToken(), isTrue);
-      expect(await tokenStore.read(), 'secure-token');
-
-      // If the secure token is subsequently absent, the old in-memory
-      // fallback must not resurrect it.
-      persistedToken = null;
+      expect(await tokenStore.read(), 'persisted-token');
+      await tokenStore.write('new-token');
+      expect(await tokenStore.read(), 'new-token');
+      await tokenStore.clear();
       expect(await tokenStore.hasToken(), isFalse);
       expect(await tokenStore.read(), isEmpty);
+    });
+
+    test('propagates secure-storage read failures', () async {
+      final storage = _MockFlutterSecureStorage();
+      when(() => storage.read(key: any(named: 'key')))
+          .thenThrow(StateError('secure storage unavailable'));
+
+      final tokenStore = GitHubTokenStore(storage: storage);
+
+      await expectLater(tokenStore.read(), throwsA(isA<StateError>()));
     });
   });
 }
