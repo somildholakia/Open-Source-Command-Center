@@ -279,6 +279,23 @@ void main() {
       expect(find.text('Retry'), findsOneWidget);
     });
 
+    testWidgets('renders without layout exceptions at compact phone width', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 700);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(createTestWidget());
+      await settleIntegration(tester);
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('COMMAND CENTER v0.1'), findsOneWidget);
+      expect(find.byType(GithubConnectHeroCard), findsOneWidget);
+    });
+
     testWidgets('renders properly on tablet resolution', (
       WidgetTester tester,
     ) async {
