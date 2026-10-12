@@ -873,7 +873,18 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
 
     try {
       await provider.disconnect();
-    } catch (_) {}
+    } catch (_) {
+      if (generation != _lifecycleGeneration) return;
+      emit(
+        const IntegrationState(
+          phase: IntegrationPhase.error,
+          failure: UnknownProviderError(
+            detail: 'Could not confirm GitHub credential removal.',
+          ),
+        ),
+      );
+      return;
+    }
     if (generation != _lifecycleGeneration) return;
 
     emit(const IntegrationState(phase: IntegrationPhase.disconnected));
