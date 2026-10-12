@@ -229,7 +229,6 @@ void main() {
     return storage;
   }
 
-
   GitHubProvider buildProvider({
     required http.Client client,
     FakeGitHubFirebaseLinker? linker,
