@@ -661,10 +661,16 @@ void main() {
         );
 
         bloc.add(const IntegrationConnectRequested());
-        await waitFor(bloc, (state) => provider.connectCalls == 1);
+        await waitFor(
+          bloc,
+          (state) => provider.connectCalls == 1,
+        );
 
         bloc.add(const IntegrationConnectRequested());
-        await waitFor(bloc, (state) => provider.connectCalls == 2);
+        await waitFor(
+          bloc,
+          (state) => provider.connectCalls == 2,
+        );
 
         firstGate.complete();
         await Future<void>.delayed(Duration.zero);
@@ -672,7 +678,10 @@ void main() {
         expect(bloc.state.phase, IntegrationPhase.connecting);
 
         secondGate.complete();
-        await waitFor(bloc, (state) => state.phase == IntegrationPhase.connected);
+        await waitFor(
+          bloc,
+          (state) => state.phase == IntegrationPhase.connected,
+        );
 
         expect(provider.disconnectCalls, 0);
         expect(bloc.state.connection?.account?.username, 'octocat');
