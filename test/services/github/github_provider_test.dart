@@ -13,6 +13,7 @@ import 'package:opensource_command_center/services/github/github_provider.dart';
 import 'package:opensource_command_center/services/github/github_token_store.dart';
 
 import '../../support/in_memory_connection_store.dart';
+import '../../support/secure_storage_test_helper.dart';
 
 /// Records Firebase link/unlink calls without touching Firebase.
 class _MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
