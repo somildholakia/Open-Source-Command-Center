@@ -72,7 +72,9 @@ void main() {
     test(
       'maps valid JSON with an invalid response shape to ApiUnavailable',
       () async {
-        final client = clientReturning([http.Response('[]', 200)]);
+        final client = clientReturning([
+          http.Response('[]', 200),
+        ]);
 
         await expectLater(
           client.start(),
