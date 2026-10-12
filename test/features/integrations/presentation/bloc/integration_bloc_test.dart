@@ -529,6 +529,7 @@ void main() {
         expect(bloc.state.failure, isA<UnknownProviderError>());
         expect(bloc.state.isConnected, isFalse);
         expect(provider.disconnectCalls, 1);
+        expect(store.record, isNotNull);
         await bloc.close();
       },
     );
@@ -1017,9 +1018,10 @@ void main() {
           detail: 'secure credential deletion failed',
         ),
       );
+      final store = InMemoryConnectionStore(connectedRecord());
       final bloc = IntegrationBloc(
         provider: provider,
-        storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
+        storeFactory: () async => store,
       );
 
       bloc.add(const IntegrationResetRequested());
@@ -1031,6 +1033,7 @@ void main() {
 
       expect(bloc.state.failure, isA<UnknownProviderError>());
       expect(provider.disconnectCalls, 1);
+      expect(store.record, isNotNull);
       await bloc.close();
     });
 
