@@ -158,7 +158,7 @@ void main() {
     });
   }
 
-  _MockFlutterSecureStorage secureStorage() {
+    _MockFlutterSecureStorage secureStorage() {
     final storage = _MockFlutterSecureStorage();
     final values = <String, String>{};
 
@@ -225,7 +225,7 @@ void main() {
     return storage;
   }
 
-  GitHubProvider buildProvider({
+GitHubProvider buildProvider({
     required http.Client client,
     FakeGitHubFirebaseLinker? linker,
     InMemoryConnectionStore? store,
