@@ -15,10 +15,6 @@ class GitHubTokenStore {
 
   final FlutterSecureStorage _storage;
 
-  /// In-memory fallback used when secure storage is unavailable (e.g. widget
-  /// tests on the host). Tokens never leave the process in this mode.
-  String? _memoryFallback;
-
   GitHubTokenStore({FlutterSecureStorage? storage})
     : _storage =
           storage ??
@@ -46,12 +42,10 @@ class GitHubTokenStore {
   /// mock store rather than relying on a non-persistent credential fallback.
   Future<void> write(String token) async {
     await _storage.write(key: _key, value: token);
-    _memoryFallback = null;
   }
 
   /// Removes the token. Idempotent.
   Future<void> clear() async {
-    _memoryFallback = null;
     try {
       await _storage.delete(key: _key);
     } catch (_) {
