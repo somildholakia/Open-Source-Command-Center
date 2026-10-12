@@ -1,0 +1,113 @@
+name: Temporary VPS Flutter checks
+
+on:
+  push:
+    branches:
+      - feature/cartoon-local-first-redesign
+  workflow_dispatch:
+
+# This workflow is limited to the trusted feature branch and manual runs.
+# It must not run for pull requests from arbitrary contributors on a self-hosted runner.
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-vps-flutter-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Format, analyze, test, and build
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          cache: false
+
+      - name: Set up Android SDK
+        shell: bash
+        run: |
+          sdk_root="$HOME/.android/sdk"
+          sdkmanager="$sdk_root/cmdline-tools/16.0/bin/sdkmanager"
+          echo "ANDROID_HOME=$sdk_root" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$sdk_root" >> "$GITHUB_ENV"
+          echo "$sdk_root/platform-tools" >> "$GITHUB_PATH"
+          # A cancelled Gradle build can leave a partial NDK extraction behind.
+          ndk_path="$sdk_root/ndk/28.2.13676358"
+          # Remove only an incomplete NDK left by an interrupted package install.
+          if [ -d "$ndk_path" ] && { [ ! -f "$ndk_path/source.properties" ] || [ ! -x "$ndk_path/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" ]; }; then
+            rm -rf "$ndk_path"
+          fi
+          rm -rf "$sdk_root/.temp/PackageOperation01"
+          df -h "$HOME"
+          "$sdkmanager" --sdk_root="$sdk_root" "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;28.2.13676358"
+
+      - name: Show toolchain versions
+        run: |
+          flutter --version
+          dart --version
+          java -version
+          flutter doctor -v
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Check Dart formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter analyze --no-pub
+
+      - name: Run auth BLoC regression tests
+        run: >-
+          timeout --kill-after=5s 60s flutter test --no-pub --reporter expanded
+          test/features/auth/presentation/bloc/auth_bloc_test.dart
+
+      - name: Run tests
+        run: flutter test --no-pub --reporter expanded
+
+      # The Firebase file is intentionally gitignored. Inject it only for this
+      # trusted feature-branch build, and never upload the raw config as an artifact.
+      - name: Configure optional Firebase and GitHub OAuth
+        shell: bash
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          GITHUB_OAUTH_CLIENT_ID: ${{ vars.GITHUB_OAUTH_CLIENT_ID }}
+        run: |
+          if [[ -n "$GOOGLE_SERVICES_JSON" ]]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+            echo "Firebase Android config prepared for this build."
+          else
+            echo "::warning::GOOGLE_SERVICES_JSON secret is not configured; Firebase authentication will not work in this APK."
+          fi
+
+          if [[ -n "$GITHUB_OAUTH_CLIENT_ID" ]]; then
+            echo "GITHUB_OAUTH_CLIENT_ID=$GITHUB_OAUTH_CLIENT_ID" >> "$GITHUB_ENV"
+            echo "GitHub device flow will be enabled in this APK."
+          else
+            echo "GITHUB_OAUTH_CLIENT_ID=" >> "$GITHUB_ENV"
+            echo "::warning::GITHUB_OAUTH_CLIENT_ID variable is not configured; GitHub connect will show the setup message."
+          fi
+
+      - name: Build debug APK
+        run: flutter build apk --debug --dart-define="GITHUB_OAUTH_CLIENT_ID=$GITHUB_OAUTH_CLIENT_ID"
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-source-command-center-vps-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 3

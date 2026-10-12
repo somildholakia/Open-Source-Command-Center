@@ -155,6 +155,44 @@ void main() {
     expect(find.text('Hello, Developer!'), findsOneWidget);
   });
 
+  testWidgets('App remains usable at a compact 320dp phone width', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(640, 1600);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(App(authService: mockAuthService));
+    await pumpUntilLoginPage(tester);
+
+    await tester.enterText(
+      find.byType(TextFormField).first,
+      'developer@example.com',
+    );
+    await tester.pump();
+    await tester.enterText(find.byType(TextFormField).last, 'password123');
+    await tester.pump();
+    await tester.ensureVisible(find.text('Initialize Session'));
+    await tester.tap(find.text('Initialize Session'));
+    await pumpUntilHomePage(tester);
+
+    expect(find.text('Hello, Developer!'), findsOneWidget);
+    expect(tester.takeException(), isNull, reason: 'compact login and home');
+
+    for (final tab in [
+      'Activity',
+      'Contributions',
+      'Progress',
+      'Profile',
+      'Home',
+    ]) {
+      await tester.tap(find.text(tab).last);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: 'compact $tab layout');
+    }
+  });
+
   testWidgets(
     'App renders side navigation rail on tablet / desktop screen after login',
     (WidgetTester tester) async {

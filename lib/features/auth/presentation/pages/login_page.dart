@@ -1,11 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/email_validator.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/cartoon_page_banner.dart';
 import '../../../../core/widgets/responsive_layout.dart';
+import '../../../../services/firebase/firebase_service.dart';
 import '../bloc/auth.dart';
 
 /// Login page for existing users.
@@ -55,6 +59,16 @@ class _LoginPageState extends State<LoginPage> {
       listener: (context, state) {
         if (state is AuthAuthenticated) {
           context.go('/');
+        } else if (state is AuthPasswordResetResult) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: state.success
+                  ? AppColors.successAccent
+                  : AppColors.errorAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -135,6 +149,31 @@ class _LoginPageState extends State<LoginPage> {
 
                   AppSpacing.vSpaceXl,
 
+                  // A debug-only local entry point keeps the UI inspectable
+                  // when this build intentionally has no Firebase config.
+                  if (kDebugMode &&
+                      !FirebaseService.instance.isInitialized) ...[
+                    OutlinedButton.icon(
+                      onPressed: isLoading
+                          ? null
+                          : () => context.read<AuthBloc>().add(
+                              const AuthDemoSessionRequested(),
+                            ),
+                      icon: const Icon(Icons.visibility_rounded),
+                      label: const Text('Preview app (local demo)'),
+                    ),
+                    AppSpacing.vSpaceXs,
+                    Text(
+                      'Debug preview only. Firebase sign-in and live GitHub sync '
+                      'need configuration.',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.captionSmall.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    AppSpacing.vSpaceMd,
+                  ],
+
                   // Divider
                   _buildDivider(),
 
@@ -158,33 +197,12 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildHeader() {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.3),
-              width: 1,
-            ),
-          ),
-          child: Icon(
-            Icons.terminal_rounded,
-            color: AppColors.primaryAccent,
-            size: 40,
-          ),
-        ),
-        AppSpacing.vSpaceLg,
-        Text('Login to Terminal', style: AppTypography.headingLarge),
-        AppSpacing.vSpaceSm,
-        Text(
-          'Connect to continue your journey',
-          style: AppTypography.bodyMedium,
-          textAlign: TextAlign.center,
-        ),
-      ],
+    return CartoonPageBanner(
+      eyebrow: 'Welcome back, adventurer',
+      title: 'Login to Terminal',
+      subtitle: 'Connect to continue your journey',
+      icon: Icons.terminal_rounded,
+      accent: AppColors.primaryAccent,
     );
   }
 
@@ -228,7 +246,7 @@ class _LoginPageState extends State<LoginPage> {
         if (value == null || value.trim().isEmpty) {
           return 'Please enter your email';
         }
-        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+        if (!EmailValidator.isValid(value)) {
           return 'Please enter a valid email address';
         }
         return null;
@@ -346,58 +364,72 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildSocialButtons(bool isLoading) {
-    return Row(
-      children: [
-        Expanded(
-          child: _SocialButton(
-            icon: Icons.code,
-            label: 'GitHub',
-            color: AppColors.surfaceElevated,
-            textColor: AppColors.textPrimary,
-            isLoading: isLoading,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('GitHub OAuth coming in Phase 2'),
-                  backgroundColor: AppColors.infoAccent,
-                ),
-              );
-            },
+    final githubButton = _SocialButton(
+      icon: Icons.code,
+      label: 'GitHub',
+      color: AppColors.surfaceElevated,
+      textColor: AppColors.textPrimary,
+      isLoading: isLoading,
+      onPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('GitHub OAuth coming in Phase 2'),
+            backgroundColor: AppColors.infoAccent,
           ),
-        ),
-        AppSpacing.hSpaceMd,
-        Expanded(
-          child: _SocialButton(
-            icon: Icons.g_mobiledata_rounded,
-            label: 'Google',
-            color: AppColors.surfaceElevated,
-            textColor: AppColors.textPrimary,
-            iconSize: 32,
-            isLoading: isLoading,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Google OAuth coming soon'),
-                  backgroundColor: AppColors.infoAccent,
-                ),
-              );
-            },
+        );
+      },
+    );
+    final googleButton = _SocialButton(
+      icon: Icons.g_mobiledata_rounded,
+      label: 'Google',
+      color: AppColors.surfaceElevated,
+      textColor: AppColors.textPrimary,
+      iconSize: 32,
+      isLoading: isLoading,
+      onPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google OAuth coming soon'),
+            backgroundColor: AppColors.infoAccent,
           ),
-        ),
-      ],
+        );
+      },
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 360) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              githubButton,
+              const SizedBox(height: AppSpacing.sm),
+              googleButton,
+            ],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: githubButton),
+            AppSpacing.hSpaceMd,
+            Expanded(child: googleButton),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildSignUpLink(bool isLoading) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: AppSpacing.xxs,
+      runSpacing: AppSpacing.xxs,
       children: [
-        Flexible(
-          child: Text(
-            'Don\'t have an account?',
-            style: AppTypography.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
+        Text(
+          'Don\'t have an account?',
+          style: AppTypography.bodyMedium,
+          textAlign: TextAlign.center,
         ),
         TextButton(
           onPressed: isLoading ? null : () => context.push('/signup'),
@@ -420,15 +452,9 @@ class _LoginPageState extends State<LoginPage> {
 
   void _showForgotPassword() {
     final emailParam = _emailController.text.trim();
-    if (emailParam.isNotEmpty && emailParam.contains('@')) {
+    if (EmailValidator.isValid(emailParam)) {
       context.read<AuthBloc>().add(
         AuthPasswordResetRequested(email: emailParam),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Password reset email sent if account exists'),
-          backgroundColor: AppColors.successAccent,
-        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

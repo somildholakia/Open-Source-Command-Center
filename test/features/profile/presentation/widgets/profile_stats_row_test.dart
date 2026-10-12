@@ -17,8 +17,10 @@ void main() {
     WidgetTester tester, {
     ProgressionStore? store,
   }) async {
-    final bloc = IntelligenceBloc(store ?? InMemoryProgressionStore(),
-        clock: () => now);
+    final bloc = IntelligenceBloc(
+      store ?? InMemoryProgressionStore(),
+      clock: () => now,
+    );
     addTearDown(bloc.close);
     await tester.pumpWidget(
       MaterialApp(
@@ -71,11 +73,7 @@ void main() {
             ),
           ],
           contributions: const ContributionSummary(
-            dailyCounts: {
-              '2026-10-06': 1,
-              '2026-10-07': 1,
-              '2026-10-08': 1,
-            },
+            dailyCounts: {'2026-10-06': 1, '2026-10-07': 1, '2026-10-08': 1},
           ),
           status: IntelligenceSourceStatus.connected,
         ),

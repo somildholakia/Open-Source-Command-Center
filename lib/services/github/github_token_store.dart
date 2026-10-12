@@ -15,10 +15,6 @@ class GitHubTokenStore {
 
   final FlutterSecureStorage _storage;
 
-  /// In-memory fallback used when secure storage is unavailable (e.g. widget
-  /// tests on the host). Tokens never leave the process in this mode.
-  String? _memoryFallback;
-
   GitHubTokenStore({FlutterSecureStorage? storage})
     : _storage =
           storage ??
@@ -28,34 +24,28 @@ class GitHubTokenStore {
 
   /// Whether a token exists in secure storage.
   Future<bool> hasToken() async {
-    try {
-      return await _storage.containsKey(key: _key);
-    } catch (_) {
-      return _memoryFallback != null;
-    }
+    return await _storage.containsKey(key: _key);
   }
 
-  /// Reads the token, or an empty string when absent/unavailable.
+  /// Reads the token, or an empty string when absent.
+  ///
+  /// Storage errors are propagated so callers can distinguish an unavailable
+  /// secure store from a genuinely disconnected account.
   Future<String> read() async {
-    try {
-      return await _storage.read(key: _key) ?? '';
-    } catch (_) {
-      return _memoryFallback ?? '';
-    }
+    return await _storage.read(key: _key) ?? '';
   }
 
   /// Writes the token to secure storage.
+  ///
+  /// Do not fall back to process memory when persistence fails: the connection
+  /// would appear successful but disappear on restart. Tests should inject a
+  /// mock store rather than relying on a non-persistent credential fallback.
   Future<void> write(String token) async {
-    try {
-      await _storage.write(key: _key, value: token);
-    } catch (_) {
-      _memoryFallback = token;
-    }
+    await _storage.write(key: _key, value: token);
   }
 
   /// Removes the token. Idempotent.
   Future<void> clear() async {
-    _memoryFallback = null;
     try {
       await _storage.delete(key: _key);
     } catch (_) {

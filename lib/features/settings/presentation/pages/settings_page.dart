@@ -8,16 +8,17 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/responsive_layout.dart';
+import '../../../../core/widgets/cartoon_page_banner.dart';
 import '../../../auth/presentation/bloc/auth.dart';
 import '../../../progress/presentation/bloc/intelligence_bloc.dart';
 import '../widgets/settings_section_card.dart';
 import '../widgets/theme_toggle.dart';
 
-/// Settings screen — Phase 1 foundation.
+/// Settings screen for account, appearance, privacy, and app information.
 ///
-/// Functional: Theme persistence (shared_preferences), Sign Out (AuthBloc).
-/// Presentation-only: Notifications, Privacy, About.
-/// No GitHub (Phase 2), no gamification (Phase 3), no premium/AdMob (Phase 4).
+/// Functional: theme persistence, authenticated account details, and sign-out.
+/// Notifications and privacy controls remain informational until their
+/// corresponding local notification/privacy features are implemented.
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
@@ -43,15 +44,33 @@ class SettingsPage extends StatelessWidget {
             // Return to the auth flow when the user signs out.
             if (state is AuthUnauthenticated) {
               context.go(AppRouter.login);
+            } else if (state is AuthSignOutFailed) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             }
           },
           builder: (context, state) {
-            if (state is AuthAuthenticated) {
-              final user = state.user;
+            if (state is AuthAuthenticated || state is AuthSignOutFailed) {
+              final user = state is AuthAuthenticated
+                  ? state.user
+                  : (state as AuthSignOutFailed).user;
               return SingleChildScrollView(
                 child: ResponsiveContainer(
                   child: Column(
                     children: [
+                      AppSpacing.vSpaceMd,
+                      const CartoonPageBanner(
+                        eyebrow: 'Make it yours',
+                        title: 'Your space, your rules',
+                        subtitle: 'Tune the app to fit the way you build.',
+                        icon: Icons.palette_rounded,
+                        accent: Color(0xFF7C4DFF),
+                      ),
                       AppSpacing.vSpaceMd,
                       // Appearance — functional: theme selection + persistence
                       const SettingsSectionCard(
@@ -439,14 +458,17 @@ class _PrivacyRow extends StatelessWidget {
           title: 'Secure authorization',
           description:
               'GitHub connects through OAuth with minimum required '
-              'permissions. Tokens are never stored in the app.',
+              'permissions. Access tokens are stored only in '
+              'device-secure storage.',
           colorScheme: colorScheme,
         ),
         AppSpacing.vSpaceXs,
         _PrivacyItem(
           icon: Icons.link_off_rounded,
           title: 'Disconnect integrations',
-          description: 'Manage connected accounts once GitHub sync is live.',
+          description:
+              'Disconnecting GitHub removes its saved token, local snapshots, '
+              'and account-scoped progression history.',
           colorScheme: colorScheme,
         ),
       ],

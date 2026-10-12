@@ -66,9 +66,12 @@ class GitHubApiClient {
           )
           .timeout(_defaultTimeout);
 
-      final body = _handleResponse(response) as Map<String, dynamic>;
-      final data = body['data'];
-      final errors = body['errors'];
+      final decoded = _handleResponse(response);
+      if (decoded is! Map<String, dynamic>) {
+        throw const ApiUnavailable();
+      }
+      final data = decoded['data'];
+      final errors = decoded['errors'];
 
       if (errors is List && errors.isNotEmpty && data == null) {
         throw UnknownProviderError(detail: errors.toString());

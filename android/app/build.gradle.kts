@@ -2,7 +2,13 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.gms.google-services")
+}
+
+// Firebase configuration is intentionally kept out of source control. Apply
+// Google Services only when a developer has supplied the local configuration;
+// CI can still compile the app with Firebase gracefully disabled.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 android {

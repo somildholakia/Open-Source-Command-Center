@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:go_router/go_router.dart';
 import 'package:opensource_command_center/core/theme/app_theme.dart';
@@ -72,6 +73,7 @@ void main() {
   late MockAuthBloc mockAuthBloc;
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     mockAuthService = MockAuthService();
     mockAuthBloc = MockAuthBloc();
   });

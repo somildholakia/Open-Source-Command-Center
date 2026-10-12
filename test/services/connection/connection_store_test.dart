@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opensource_command_center/domain/domain.dart';
 import 'package:opensource_command_center/services/connection/connection_store.dart';
-import 'package:opensource_command_center/services/github/github_token_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -80,37 +79,6 @@ void main() {
 
       await store.clear();
       expect(store.load(), isNull);
-    });
-  });
-
-  group('GitHubTokenStore', () {
-    test(
-      'falls back to in-memory storage when secure storage is unavailable',
-      () async {
-        // In the test host the platform channel is absent, so the store must
-        // degrade to memory instead of throwing.
-        final store = GitHubTokenStore();
-
-        expect(await store.hasToken(), isFalse);
-        expect(await store.read(), '');
-
-        await store.write('gho_secret');
-        expect(await store.hasToken(), isTrue);
-        expect(await store.read(), 'gho_secret');
-
-        await store.clear();
-        expect(await store.hasToken(), isFalse);
-        expect(await store.read(), '');
-      },
-    );
-
-    test('clear is idempotent', () async {
-      final store = GitHubTokenStore();
-
-      await store.clear();
-      await store.clear();
-
-      expect(await store.hasToken(), isFalse);
     });
   });
 }

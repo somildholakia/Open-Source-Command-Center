@@ -1,6 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="opensource_command_center"
+        android:label="Open Source Command Center"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

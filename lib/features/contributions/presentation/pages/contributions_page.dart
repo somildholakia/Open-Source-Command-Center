@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/responsive_layout.dart';
+import '../../../../core/widgets/cartoon_page_banner.dart';
 import '../../../../core/widgets/sample_data_banner.dart';
 import '../../../../core/widgets/status_message_card.dart';
 import '../../../integrations/presentation/bloc/integration_bloc.dart';
@@ -43,8 +44,42 @@ class ContributionsPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const CartoonPageBanner(
+                      eyebrow: 'Your impact',
+                      title: 'Look how far you have grown',
+                      subtitle: 'A colorful map of the work you have shipped.',
+                      icon: Icons.local_florist_rounded,
+                      accent: Color(0xFF7C4DFF),
+                    ),
+                    AppSpacing.vSpaceLg,
                     ContributionsHeader(isSample: !state.isConnected),
                     AppSpacing.vSpaceLg,
+                    if (state.isStale &&
+                        state.failure != null &&
+                        state.contributions != null) ...[
+                      StatusMessageCard(
+                        icon: Icons.cloud_off_rounded,
+                        message:
+                            '${failureMessage(state.failure!)} Showing saved data where available.',
+                        isError: true,
+                        actionLabel: 'Retry',
+                        onAction: () => context.read<IntegrationBloc>().add(
+                          const IntegrationDataRefreshRequested(),
+                        ),
+                      ),
+                      AppSpacing.vSpaceMd,
+                    ] else if (state.isStale) ...[
+                      StatusMessageCard(
+                        icon: Icons.cloud_off_rounded,
+                        message:
+                            'Showing saved data. Refresh to check for updates.',
+                        actionLabel: 'Refresh',
+                        onAction: () => context.read<IntegrationBloc>().add(
+                          const IntegrationDataRefreshRequested(),
+                        ),
+                      ),
+                      AppSpacing.vSpaceMd,
+                    ],
                     ..._buildBody(context, state),
                     AppSpacing.vSpaceXl,
                   ],

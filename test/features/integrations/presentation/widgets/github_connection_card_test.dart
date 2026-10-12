@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opensource_command_center/domain/domain.dart';
 import 'package:opensource_command_center/features/integrations/presentation/bloc/integration_bloc.dart';
 import 'package:opensource_command_center/features/integrations/presentation/widgets/github_connection_card.dart';
@@ -9,6 +10,10 @@ import '../../../../support/fake_developer_provider.dart';
 import '../../../../support/in_memory_connection_store.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   ProviderConnectionRecord record({String username = 'octocat'}) {
     return ProviderConnectionRecord.connected(
       providerId: 'github',

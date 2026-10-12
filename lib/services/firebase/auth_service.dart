@@ -87,9 +87,11 @@ class AuthService {
       throw _mapFirebaseAuthException(e);
     } catch (e) {
       if (e is AuthFailure) rethrow;
-      throw AuthFailure(
+      // Do not surface arbitrary SDK/platform exception text to users.
+      debugPrint('[AuthService] Unexpected sign-in failure: ${e.runtimeType}');
+      throw const AuthFailure(
         type: AuthErrorType.unknown,
-        message: 'An unexpected error occurred: $e',
+        message: 'Sign-in failed. Please try again.',
       );
     }
   }
@@ -140,9 +142,11 @@ class AuthService {
       throw _mapFirebaseAuthException(e);
     } catch (e) {
       if (e is AuthFailure) rethrow;
-      throw AuthFailure(
+      // Do not surface arbitrary SDK/platform exception text to users.
+      debugPrint('[AuthService] Unexpected sign-up failure: ${e.runtimeType}');
+      throw const AuthFailure(
         type: AuthErrorType.unknown,
-        message: 'An unexpected error occurred: $e',
+        message: 'Sign-up failed. Please try again.',
       );
     }
   }
@@ -228,9 +232,12 @@ class AuthService {
           message: 'Too many attempts. Please try again later.',
         );
       default:
-        return AuthFailure(
+        // Firebase's raw message may contain implementation details. The
+        // known user-actionable codes above already have specific messages.
+        debugPrint('[AuthService] Unmapped Firebase auth code: ${e.code}');
+        return const AuthFailure(
           type: AuthErrorType.unknown,
-          message: e.message ?? 'Authentication failed (${e.code}).',
+          message: 'Authentication failed. Please try again.',
         );
     }
   }

@@ -40,7 +40,8 @@ class ProgressionRecord extends Equatable {
   bool isAchievementUnlocked(String achievementId) =>
       unlockedAchievements.containsKey(achievementId);
 
-  bool isQuestCompleted(String questKey) => completedQuestKeys.contains(questKey);
+  bool isQuestCompleted(String questKey) =>
+      completedQuestKeys.contains(questKey);
 
   /// Quest instances completed across all time.
   int get completedQuestCount => completedQuestKeys.length;

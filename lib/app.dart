@@ -11,6 +11,7 @@ import 'domain/domain.dart';
 import 'features/integrations/presentation/bloc/integration_bloc.dart';
 import 'features/progress/presentation/bloc/intelligence_bloc.dart';
 import 'services/firebase/auth_service.dart';
+import 'services/firebase/firebase_service.dart';
 import 'services/github/github_provider.dart';
 import 'services/progression/progression_store.dart';
 
@@ -48,6 +49,8 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   late final GoRouter _router;
+  String? _lastConnectedAccountId;
+  bool _demoSessionActive = false;
 
   @override
   void initState() {
@@ -89,11 +92,21 @@ class _AppState extends State<App> {
         listener: (context, state) {
           final integration = context.read<IntegrationBloc>();
           if (state is AuthAuthenticated) {
-            // Restore any stored GitHub connection for this session.
-            integration.add(const IntegrationStarted());
+            if (state.user.uid == 'local-demo') {
+              // The local preview must not load or mutate a real GitHub session.
+              _demoSessionActive = true;
+            } else {
+              _demoSessionActive = false;
+              integration.add(const IntegrationStarted());
+            }
           } else if (state is AuthUnauthenticated) {
-            // Drop in-memory connection state on sign-out.
-            integration.add(const IntegrationResetRequested());
+            if (_demoSessionActive || !FirebaseService.instance.isInitialized) {
+              // A local preview or unavailable Firebase setup has no Firebase
+              // session whose sign-out should erase a stored GitHub connection.
+              _demoSessionActive = false;
+            } else {
+              integration.add(const IntegrationResetRequested());
+            }
           }
         },
         child: BlocListener<IntegrationBloc, IntegrationState>(
@@ -102,7 +115,28 @@ class _AppState extends State<App> {
           listenWhen: (previous, current) =>
               _intelligenceSourceChanged(previous, current),
           listener: (context, state) {
-            context.read<IntelligenceBloc>().add(_intelligenceSourceOf(state));
+            final intelligenceBloc = context.read<IntelligenceBloc>();
+            final currentAccountId = _accountIdOf(state);
+            final previousAccountId = _lastConnectedAccountId;
+
+            if (state.phase == IntegrationPhase.disconnected) {
+              if (previousAccountId != null) {
+                intelligenceBloc.add(
+                  IntelligenceAccountDisconnected(previousAccountId),
+                );
+              }
+              _lastConnectedAccountId = null;
+            } else if (currentAccountId != null) {
+              if (previousAccountId != null &&
+                  previousAccountId != currentAccountId) {
+                intelligenceBloc.add(
+                  IntelligenceAccountDisconnected(previousAccountId),
+                );
+              }
+              _lastConnectedAccountId = currentAccountId;
+            }
+
+            intelligenceBloc.add(_intelligenceSourceOf(state));
           },
           child: ValueListenableBuilder<ThemeMode>(
             valueListenable: ThemePreference.notifier,

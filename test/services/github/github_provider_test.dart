@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:opensource_command_center/domain/domain.dart';
@@ -12,6 +15,8 @@ import 'package:opensource_command_center/services/github/github_token_store.dar
 import '../../support/in_memory_connection_store.dart';
 
 /// Records Firebase link/unlink calls without touching Firebase.
+class _MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
+
 class FakeGitHubFirebaseLinker implements GitHubFirebaseLinker {
   int linkCalls = 0;
   int unlinkCalls = 0;
@@ -105,7 +110,7 @@ void main() {
           200,
         );
       }
-      if (path == '/user/events/public') {
+      if (path == '/users/octocat/events/public') {
         return http.Response(
           jsonEncode([
             {
@@ -153,10 +158,82 @@ void main() {
     });
   }
 
+  _MockFlutterSecureStorage secureStorage() {
+    final storage = _MockFlutterSecureStorage();
+    final values = <String, String>{};
+
+    when(
+      () => storage.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+        aOptions: any(named: 'aOptions'),
+        iOptions: any(named: 'iOptions'),
+        lOptions: any(named: 'lOptions'),
+        wOptions: any(named: 'wOptions'),
+        mOptions: any(named: 'mOptions'),
+        webOptions: any(named: 'webOptions'),
+      ),
+    ).thenAnswer((invocation) async {
+      final key = invocation.namedArguments[#key] as String;
+      final value = invocation.namedArguments[#value] as String?;
+      if (value == null) {
+        values.remove(key);
+      } else {
+        values[key] = value;
+      }
+    });
+
+    when(
+      () => storage.read(
+        key: any(named: 'key'),
+        aOptions: any(named: 'aOptions'),
+        iOptions: any(named: 'iOptions'),
+        lOptions: any(named: 'lOptions'),
+        wOptions: any(named: 'wOptions'),
+        mOptions: any(named: 'mOptions'),
+        webOptions: any(named: 'webOptions'),
+      ),
+    ).thenAnswer(
+      (invocation) async => values[invocation.namedArguments[#key] as String],
+    );
+
+    when(
+      () => storage.containsKey(
+        key: any(named: 'key'),
+        aOptions: any(named: 'aOptions'),
+        iOptions: any(named: 'iOptions'),
+        lOptions: any(named: 'lOptions'),
+        wOptions: any(named: 'wOptions'),
+        mOptions: any(named: 'mOptions'),
+        webOptions: any(named: 'webOptions'),
+      ),
+    ).thenAnswer(
+      (invocation) async =>
+          values.containsKey(invocation.namedArguments[#key] as String),
+    );
+
+    when(
+      () => storage.delete(
+        key: any(named: 'key'),
+        aOptions: any(named: 'aOptions'),
+        iOptions: any(named: 'iOptions'),
+        lOptions: any(named: 'lOptions'),
+        wOptions: any(named: 'wOptions'),
+        mOptions: any(named: 'mOptions'),
+        webOptions: any(named: 'webOptions'),
+      ),
+    ).thenAnswer((invocation) async {
+      values.remove(invocation.namedArguments[#key] as String);
+    });
+
+    return storage;
+  }
+
   GitHubProvider buildProvider({
     required http.Client client,
     FakeGitHubFirebaseLinker? linker,
     InMemoryConnectionStore? store,
+    GitHubTokenStore? tokenStore,
   }) {
     return GitHubProvider(
       httpClient: client,
@@ -164,7 +241,7 @@ void main() {
         client: client,
         clientId: 'test-client-id',
       ),
-      tokenStore: GitHubTokenStore(),
+      tokenStore: tokenStore ?? GitHubTokenStore(storage: secureStorage()),
       firebaseLinker: linker ?? FakeGitHubFirebaseLinker(),
       connectionStoreFactory: () async => store ?? InMemoryConnectionStore(),
     );
@@ -203,6 +280,30 @@ void main() {
       expect(linker.lastToken, 'gho_test_token');
     });
 
+    test('hydrates the saved token before restored API requests', () async {
+      final tokenStore = GitHubTokenStore(storage: _MockFlutterSecureStorage());
+      final store = InMemoryConnectionStore();
+      final firstProvider = buildProvider(
+        client: githubMock(),
+        tokenStore: tokenStore,
+        store: store,
+      );
+      await firstProvider.connect();
+
+      // A new provider instance has an empty in-memory token mirror. Startup's
+      // isConnected check must hydrate it from secure storage.
+      final restoredProvider = buildProvider(
+        client: githubMock(),
+        tokenStore: tokenStore,
+        store: store,
+      );
+      expect(await restoredProvider.isConnected(), isTrue);
+      await restoredProvider.fetchProfile();
+
+      final request = requests.lastWhere((r) => r.url.path == '/user');
+      expect(request.headers['Authorization'], 'Bearer gho_test_token');
+    });
+
     test(
       'fails with a configuration message when the client id is missing',
       () async {
@@ -212,7 +313,7 @@ void main() {
             client: githubMock(),
             clientId: '',
           ),
-          tokenStore: GitHubTokenStore(),
+          tokenStore: GitHubTokenStore(storage: _MockFlutterSecureStorage()),
           firebaseLinker: FakeGitHubFirebaseLinker(),
           connectionStoreFactory: () async => InMemoryConnectionStore(),
         );
@@ -230,6 +331,132 @@ void main() {
         expect(await provider.isConnected(), isFalse);
       },
     );
+
+    test(
+      'does not persist a token when cancelled while a poll is in flight',
+      () async {
+        final pollStarted = Completer<void>();
+        final pollResponse = Completer<http.Response>();
+        requests = [];
+        final client = MockClient((request) async {
+          requests.add(request);
+          if (request.url.path == '/login/device/code') {
+            return http.Response(
+              jsonEncode({
+                'device_code': 'device-1',
+                'user_code': 'WDJB-MJHT',
+                'verification_uri': 'https://github.com/login/device',
+                'expires_in': 900,
+                'interval': 1,
+              }),
+              200,
+            );
+          }
+          if (request.url.path == '/login/oauth/access_token') {
+            if (!pollStarted.isCompleted) pollStarted.complete();
+            return pollResponse.future;
+          }
+          return http.Response('not found', 404);
+        });
+        final tokenStore = GitHubTokenStore(storage: _MockFlutterSecureStorage());
+        final provider = buildProvider(client: client, tokenStore: tokenStore);
+
+        final connecting = provider.connect();
+        await pollStarted.future;
+        provider.cancelAuthorization();
+        pollResponse.complete(
+          http.Response(
+            jsonEncode({'access_token': 'gho_cancelled_token'}),
+            200,
+          ),
+        );
+
+        await expectLater(
+          connecting,
+          throwsA(
+            isA<AuthenticationFailed>().having(
+              (failure) => failure.detail,
+              'detail',
+              contains('cancelled'),
+            ),
+          ),
+        );
+        expect(await provider.isConnected(), isFalse);
+      },
+    );
+
+    test('clears a late token when cancelled during profile loading', () async {
+      final profileStarted = Completer<void>();
+      final profileResponse = Completer<http.Response>();
+      requests = [];
+      final client = MockClient((request) async {
+        requests.add(request);
+        switch (request.url.path) {
+          case '/login/device/code':
+            return http.Response(
+              jsonEncode({
+                'device_code': 'device-1',
+                'user_code': 'WDJB-MJHT',
+                'verification_uri': 'https://github.com/login/device',
+                'expires_in': 900,
+                'interval': 1,
+              }),
+              200,
+            );
+          case '/login/oauth/access_token':
+            return http.Response(
+              jsonEncode({'access_token': 'gho_cancelled_token'}),
+              200,
+            );
+          case '/user':
+            if (!profileStarted.isCompleted) profileStarted.complete();
+            return profileResponse.future;
+          default:
+            return http.Response('not found', 404);
+        }
+      });
+      final tokenStore = GitHubTokenStore(storage: _MockFlutterSecureStorage());
+      final store = InMemoryConnectionStore();
+      final linker = FakeGitHubFirebaseLinker();
+      final provider = buildProvider(
+        client: client,
+        tokenStore: tokenStore,
+        store: store,
+        linker: linker,
+      );
+
+      final connecting = provider.connect();
+      await profileStarted.future;
+      provider.cancelAuthorization();
+      profileResponse.complete(
+        http.Response(
+          jsonEncode({
+            'id': 1,
+            'login': 'octocat',
+            'name': 'The Octocat',
+            'avatar_url': '',
+            'html_url': 'https://github.com/octocat',
+            'public_repos': 8,
+            'followers': 100,
+          }),
+          200,
+        ),
+      );
+
+      await expectLater(
+        connecting,
+        throwsA(
+          isA<AuthenticationFailed>().having(
+            (failure) => failure.detail,
+            'detail',
+            contains('cancelled'),
+          ),
+        ),
+      );
+      expect(await provider.isConnected(), isFalse);
+      expect(store.record, isNull);
+      expect(linker.unlinkCalls, 1);
+    });
 
     test('stops polling when authorization is cancelled', () async {
       final client = githubMock(pollSuccessAfter: 100);
@@ -282,17 +509,20 @@ void main() {
       },
     );
 
-    test('fetchActivity maps /user/events/public with the limit', () async {
-      final activity = await provider.fetchActivity(limit: 10);
+    test(
+      'fetchActivity maps /users/{username}/events/public with the limit',
+      () async {
+        final activity = await provider.fetchActivity(limit: 10);
 
-      expect(activity, hasLength(1));
-      expect(activity.single.type, DeveloperActivityType.commitPushed);
-      expect(activity.single.commitCount, 2);
-      final request = requests.lastWhere(
-        (r) => r.url.path == '/user/events/public',
-      );
-      expect(request.url.queryParameters['per_page'], '10');
-    });
+        expect(activity, hasLength(1));
+        expect(activity.single.type, DeveloperActivityType.commitPushed);
+        expect(activity.single.commitCount, 2);
+        final request = requests.lastWhere(
+          (r) => r.url.path == '/users/octocat/events/public',
+        );
+        expect(request.url.queryParameters['per_page'], '10');
+      },
+    );
 
     test('fetchContributions maps the GraphQL contribution calendar', () async {
       final summary = await provider.fetchContributions();

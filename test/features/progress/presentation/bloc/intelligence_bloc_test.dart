@@ -1,7 +1,36 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opensource_command_center/domain/domain.dart';
 import 'package:opensource_command_center/features/progress/presentation/bloc/intelligence_bloc.dart';
 import 'package:opensource_command_center/services/progression/progression_store.dart';
+
+class DelayedSaveProgressionStore implements ProgressionStore {
+  final InMemoryProgressionStore _delegate = InMemoryProgressionStore();
+  final Completer<void> saveStarted = Completer<void>();
+  final Completer<void> releaseSave = Completer<void>();
+  final Completer<void> clearCompleted = Completer<void>();
+  bool _delayNextSave = true;
+
+  @override
+  ProgressionRecord load(String accountId) => _delegate.load(accountId);
+
+  @override
+  Future<void> save(String accountId, ProgressionRecord record) async {
+    if (_delayNextSave) {
+      _delayNextSave = false;
+      saveStarted.complete();
+      await releaseSave.future;
+    }
+    await _delegate.save(accountId, record);
+  }
+
+  @override
+  Future<void> clear(String accountId) async {
+    await _delegate.clear(accountId);
+    if (!clearCompleted.isCompleted) clearCompleted.complete();
+  }
+}
 
 void main() {
   // Thursday 2026-10-08; the current week started Monday 2026-10-05.
@@ -101,8 +130,7 @@ void main() {
   });
 
   group('derivation', () {
-    test('publishes real XP, level, streak, achievements and quests',
-        () async {
+    test('publishes real XP, level, streak, achievements and quests', () async {
       final bloc = IntelligenceBloc(
         InMemoryProgressionStore(),
         clock: () => now,
@@ -139,24 +167,26 @@ void main() {
       await bloc.close();
     });
 
-    test('persists first-time unlocks and quest completions per account',
-        () async {
-      final store = InMemoryProgressionStore();
-      final bloc = IntelligenceBloc(store, clock: () => now);
+    test(
+      'persists first-time unlocks and quest completions per account',
+      () async {
+        final store = InMemoryProgressionStore();
+        final bloc = IntelligenceBloc(store, clock: () => now);
 
-      bloc.add(connectedSource(activities: [activity(id: 'merge')]));
-      await waitFor(bloc, (state) => state.computedAt != null);
+        bloc.add(connectedSource(activities: [activity(id: 'merge')]));
+        await waitFor(bloc, (state) => state.computedAt != null);
 
-      final saved = store.load('github:octocat');
-      expect(saved.isAchievementUnlocked('first_merge'), isTrue);
-      expect(saved.unlockedAt('first_merge'), now.toUtc());
-      expect(saved.completedQuestKeys, isNotEmpty);
-      // Nothing is reported as new once it has been recorded.
-      expect(bloc.state.intelligence.newlyUnlockedAchievementIds, isEmpty);
-      expect(bloc.state.intelligence.newlyCompletedQuestKeys, isEmpty);
+        final saved = store.load('github:octocat');
+        expect(saved.isAchievementUnlocked('first_merge'), isTrue);
+        expect(saved.unlockedAt('first_merge'), now.toUtc());
+        expect(saved.completedQuestKeys, isNotEmpty);
+        // Nothing is reported as new once it has been recorded.
+        expect(bloc.state.intelligence.newlyUnlockedAchievementIds, isEmpty);
+        expect(bloc.state.intelligence.newlyCompletedQuestKeys, isEmpty);
 
-      await bloc.close();
-    });
+        await bloc.close();
+      },
+    );
 
     test('a later session keeps unlocked achievements from history', () async {
       final store = InMemoryProgressionStore();
@@ -183,6 +213,29 @@ void main() {
       await bloc.close();
     });
 
+    test(
+      'does not publish an old account after switching during save',
+      () async {
+        final store = DelayedSaveProgressionStore();
+        final bloc = IntelligenceBloc(store, clock: () => now);
+
+        bloc.add(connectedSource(activities: [activity(id: 'merge')]));
+        await store.saveStarted.future.timeout(const Duration(seconds: 2));
+
+        bloc.add(
+          connectedSource(accountId: 'github:mona', withContributions: null),
+        );
+        await waitFor(bloc, (state) => state.accountId == 'github:mona');
+
+        store.releaseSave.complete();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(bloc.state.accountId, 'github:mona');
+        expect(bloc.state.hasData, isFalse);
+        await bloc.close();
+      },
+    );
+
     test('progression never leaks between accounts', () async {
       final store = InMemoryProgressionStore();
       final bloc = IntelligenceBloc(store, clock: () => now);
@@ -196,10 +249,7 @@ void main() {
           withContributions: null,
         ),
       );
-      await waitFor(
-        bloc,
-        (state) => state.accountId == 'github:someone-else',
-      );
+      await waitFor(bloc, (state) => state.accountId == 'github:someone-else');
 
       expect(achievementOf(bloc.state, 'first_merge').unlocked, isFalse);
       expect(store.load('github:someone-else'), ProgressionRecord.empty);
@@ -255,28 +305,30 @@ void main() {
       await bloc.close();
     });
 
-    test('a failure with no data is an error state, not fake progress',
-        () async {
-      final bloc = IntelligenceBloc(
-        InMemoryProgressionStore(),
-        clock: () => now,
-      );
+    test(
+      'a failure with no data is an error state, not fake progress',
+      () async {
+        final bloc = IntelligenceBloc(
+          InMemoryProgressionStore(),
+          clock: () => now,
+        );
 
-      bloc.add(
-        connectedSource(
-          withContributions: null,
-          failure: const ApiUnavailable(statusCode: 503),
-        ),
-      );
-      await waitFor(bloc, (state) => state.failure != null);
+        bloc.add(
+          connectedSource(
+            withContributions: null,
+            failure: const ApiUnavailable(statusCode: 503),
+          ),
+        );
+        await waitFor(bloc, (state) => state.failure != null);
 
-      expect(bloc.state.hasData, isFalse);
-      expect(bloc.state.isStale, isFalse);
-      expect(bloc.state.intelligence.xp.totalXp, 0);
-      expect(bloc.state.intelligence.level.level, 1);
+        expect(bloc.state.hasData, isFalse);
+        expect(bloc.state.isStale, isFalse);
+        expect(bloc.state.intelligence.xp.totalXp, 0);
+        expect(bloc.state.intelligence.level.level, 1);
 
-      await bloc.close();
-    });
+        await bloc.close();
+      },
+    );
 
     test('expired and disconnected both need a connection', () async {
       final bloc = IntelligenceBloc(
@@ -302,6 +354,70 @@ void main() {
     });
   });
 
+  group('account disconnect', () {
+    test(
+      'clears history after an in-flight save completes during disconnect',
+      () async {
+        final store = DelayedSaveProgressionStore();
+        final bloc = IntelligenceBloc(store, clock: () => now);
+
+        bloc.add(connectedSource(activities: [activity(id: 'merge')]));
+        await store.saveStarted.future.timeout(const Duration(seconds: 2));
+
+        bloc.add(const IntelligenceAccountDisconnected('github:octocat'));
+        // Let the disconnect handler queue its clear behind the active save.
+        await Future<void>.delayed(Duration.zero);
+        store.releaseSave.complete();
+
+        await store.clearCompleted.future.timeout(const Duration(seconds: 2));
+
+        expect(store.load('github:octocat'), ProgressionRecord.empty);
+        await bloc.close();
+      },
+    );
+
+    test(
+      'clears one account history without affecting the active account',
+      () async {
+        final store = InMemoryProgressionStore();
+        await store.save(
+          'github:octocat',
+          ProgressionRecord.empty.withAchievement(
+            'first_merge',
+            DateTime.utc(2026, 9, 1),
+          ),
+        );
+        await store.save(
+          'github:mona',
+          ProgressionRecord.empty.withAchievement(
+            'ten_merges',
+            DateTime.utc(2026, 9, 2),
+          ),
+        );
+
+        final bloc = IntelligenceBloc(store, clock: () => now);
+        bloc.add(
+          connectedSource(accountId: 'github:mona', withContributions: null),
+        );
+        await waitFor(bloc, (state) => state.accountId == 'github:mona');
+
+        bloc.add(const IntelligenceAccountDisconnected('github:octocat'));
+        await waitFor(
+          bloc,
+          (_) => store.load('github:octocat') == ProgressionRecord.empty,
+        );
+
+        expect(bloc.state.accountId, 'github:mona');
+        expect(
+          store.load('github:mona').isAchievementUnlocked('ten_merges'),
+          isTrue,
+        );
+
+        await bloc.close();
+      },
+    );
+  });
+
   group('reset', () {
     test('forgets stored history but keeps derived achievements', () async {
       final store = InMemoryProgressionStore();
@@ -318,7 +434,9 @@ void main() {
 
       expect(achievementOf(bloc.state, 'ten_merges').unlocked, isTrue);
       expect(
-        bloc.state.progression.isQuestCompleted('daily_commit@daily:2026-10-01'),
+        bloc.state.progression.isQuestCompleted(
+          'daily_commit@daily:2026-10-01',
+        ),
         isTrue,
       );
 
@@ -333,7 +451,9 @@ void main() {
       expect(achievementOf(bloc.state, 'ten_merges').unlocked, isFalse);
       expect(achievementOf(bloc.state, 'first_merge').unlocked, isTrue);
       expect(
-        bloc.state.progression.isQuestCompleted('daily_commit@daily:2026-10-01'),
+        bloc.state.progression.isQuestCompleted(
+          'daily_commit@daily:2026-10-01',
+        ),
         isFalse,
       );
 

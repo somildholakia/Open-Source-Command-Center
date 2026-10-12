@@ -36,6 +36,18 @@ class AuthAuthenticated extends AuthState {
   List<Object?> get props => [user];
 }
 
+/// A sign-out attempt failed while the Firebase session remains active.
+/// Keeps the authenticated screen available so the user can retry.
+class AuthSignOutFailed extends AuthState {
+  final UserModel user;
+  final String message;
+
+  const AuthSignOutFailed({required this.user, required this.message});
+
+  @override
+  List<Object?> get props => [user, message];
+}
+
 /// Authentication encountered an error.
 class AuthError extends AuthState {
   final String message;
@@ -45,4 +57,15 @@ class AuthError extends AuthState {
 
   @override
   List<Object?> get props => [message, type];
+}
+
+/// Result of a password-reset request, emitted only after the service responds.
+class AuthPasswordResetResult extends AuthState {
+  final bool success;
+  final String message;
+
+  const AuthPasswordResetResult({required this.success, required this.message});
+
+  @override
+  List<Object?> get props => [success, message];
 }

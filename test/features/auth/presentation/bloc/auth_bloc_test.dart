@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opensource_command_center/core/utils/email_validator.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:opensource_command_center/features/auth/data/models/user_model.dart';
 import 'package:opensource_command_center/features/auth/presentation/bloc/auth.dart';
@@ -7,6 +8,17 @@ import 'package:opensource_command_center/services/firebase/auth_service.dart';
 class MockAuthService extends Mock implements AuthService {}
 
 void main() {
+  group('shared email validation', () {
+    test('accepts modern TLDs longer than four characters', () {
+      expect(EmailValidator.isValid('dev@example.technology'), isTrue);
+    });
+
+    test('rejects malformed addresses', () {
+      expect(EmailValidator.isValid('dev@'), isFalse);
+      expect(EmailValidator.isValid('dev @example.com'), isFalse);
+    });
+  });
+
   group('AuthBloc', () {
     late MockAuthService mockAuthService;
     late AuthBloc authBloc;
@@ -30,6 +42,25 @@ void main() {
     test('initial state is AuthInitial', () {
       expect(authBloc.state, equals(const AuthInitial()));
     });
+
+    test(
+      'starts a local preview session when Firebase is unavailable',
+      () async {
+        final expectation = expectLater(
+          authBloc.stream,
+          emits(
+            isA<AuthAuthenticated>().having(
+              (state) => state.user.uid,
+              'demo uid',
+              'local-demo',
+            ),
+          ),
+        );
+
+        authBloc.add(const AuthDemoSessionRequested());
+        await expectation;
+      },
+    );
 
     group('AuthCheckRequested', () {
       test(
@@ -148,6 +179,36 @@ void main() {
         );
       });
 
+      test('does not expose unexpected sign-in exceptions', () async {
+        when(
+          () => mockAuthService.signInWithEmailAndPassword(
+            email: 'test@example.com',
+            password: 'password123',
+          ),
+        ).thenThrow(Exception('internal details'));
+
+        expectLater(
+          authBloc.stream,
+          emitsInOrder([
+            const AuthLoading(),
+            isA<AuthError>()
+                .having((state) => state.type, 'type', AuthErrorType.unknown)
+                .having(
+                  (state) => state.message,
+                  'message',
+                  'Sign-in failed. Please try again.',
+                ),
+          ]),
+        );
+
+        authBloc.add(
+          const AuthSignInRequested(
+            email: 'test@example.com',
+            password: 'password123',
+          ),
+        );
+      });
+
       test(
         'emits [AuthLoading, AuthError] when service throws AuthFailure',
         () async {
@@ -254,6 +315,37 @@ void main() {
         );
       });
 
+      test('does not expose unexpected sign-up exceptions', () async {
+        when(
+          () => mockAuthService.signUpWithEmailAndPassword(
+            email: 'newdev@example.com',
+            password: 'strongPassword99!',
+            displayName: null,
+          ),
+        ).thenThrow(Exception('internal details'));
+
+        expectLater(
+          authBloc.stream,
+          emitsInOrder([
+            const AuthLoading(),
+            isA<AuthError>()
+                .having((state) => state.type, 'type', AuthErrorType.unknown)
+                .having(
+                  (state) => state.message,
+                  'message',
+                  'Sign-up failed. Please try again.',
+                ),
+          ]),
+        );
+
+        authBloc.add(
+          const AuthSignUpRequested(
+            email: 'newdev@example.com',
+            password: 'strongPassword99!',
+          ),
+        );
+      });
+
       test(
         'emits [AuthLoading, AuthError] when email is already in use',
         () async {
@@ -302,10 +394,31 @@ void main() {
 
         authBloc.add(const AuthSignOutRequested());
       });
+
+      test('preserves the authenticated user when sign out fails', () async {
+        when(() => mockAuthService.currentUser).thenReturn(testUser);
+        when(() => mockAuthService.signOut()).thenThrow(Exception('offline'));
+
+        expectLater(
+          authBloc.stream,
+          emitsInOrder([
+            const AuthLoading(),
+            isA<AuthSignOutFailed>()
+                .having((state) => state.user, 'user', testUser)
+                .having(
+                  (state) => state.message,
+                  'message',
+                  'Could not sign out. Please try again.',
+                ),
+          ]),
+        );
+
+        authBloc.add(const AuthSignOutRequested());
+      });
     });
 
     group('AuthPasswordResetRequested', () {
-      test('calls service when email is valid', () async {
+      test('reports success only after the reset service succeeds', () async {
         when(() => mockAuthService.sendPasswordResetEmail('dev@example.com'))
             .thenAnswer((_) async => true);
 
@@ -316,7 +429,37 @@ void main() {
 
         verify(() => mockAuthService.sendPasswordResetEmail('dev@example.com'))
             .called(1);
+        expect(
+          authBloc.state,
+          isA<AuthPasswordResetResult>().having(
+            (state) => state.success,
+            'success',
+            isTrue,
+          ),
+        );
       });
+
+      test(
+        'reports failure when the reset service cannot send email',
+        () async {
+          when(() => mockAuthService.sendPasswordResetEmail('dev@example.com'))
+              .thenAnswer((_) async => false);
+
+          authBloc.add(
+            const AuthPasswordResetRequested(email: 'dev@example.com'),
+          );
+          await pumpEventQueue();
+
+          expect(
+            authBloc.state,
+            isA<AuthPasswordResetResult>().having(
+              (state) => state.success,
+              'success',
+              isFalse,
+            ),
+          );
+        },
+      );
 
       test('emits AuthError when email is invalid', () async {
         expectLater(

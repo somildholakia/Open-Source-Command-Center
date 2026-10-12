@@ -71,6 +71,16 @@ class IntelligenceProgressionResetRequested extends IntelligenceEvent {
   const IntelligenceProgressionResetRequested();
 }
 
+/// The provider account was disconnected or replaced by another account.
+///
+/// Persisted progression history is account-scoped and should not remain on a
+/// shared device after the user disconnects that account.
+class IntelligenceAccountDisconnected extends IntelligenceEvent {
+  final String accountId;
+
+  const IntelligenceAccountDisconnected(this.accountId);
+}
+
 /// Developer progression resolved from the source data.
 class IntelligenceState extends Equatable {
   /// Deterministic intelligence; never null. Zeroed while there is no data.
@@ -176,13 +186,19 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
   final ProgressionStore _store;
   final DateTime Function() _clock;
   final Map<String, ProgressionRecord> _progressionByAccount = {};
+  // Serialize writes and clears per account. A save that started before a
+  // disconnect/reset must finish before the clear, otherwise it can resurrect
+  // history after the user explicitly removed it.
+  final Map<String, Future<void>> _persistenceTails = {};
   IntelligenceSourceChanged? _lastSource;
+  int _sourceGeneration = 0;
 
   IntelligenceBloc(this._store, {DateTime Function()? clock})
     : _clock = clock ?? DateTime.now,
       super(IntelligenceState.empty()) {
     on<IntelligenceSourceChanged>(_onSourceChanged);
     on<IntelligenceProgressionResetRequested>(_onProgressionResetRequested);
+    on<IntelligenceAccountDisconnected>(_onAccountDisconnected);
   }
 
   ProgressionRecord _progressionFor(String accountId) {
@@ -192,10 +208,21 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
     );
   }
 
+  Future<void> _enqueuePersistence(
+    String accountId,
+    Future<void> Function() operation,
+  ) {
+    final previous = _persistenceTails[accountId] ?? Future<void>.value();
+    final next = previous.catchError((Object _) {}).then((_) => operation());
+    _persistenceTails[accountId] = next;
+    return next;
+  }
+
   Future<void> _onSourceChanged(
     IntelligenceSourceChanged event,
     Emitter<IntelligenceState> emit,
   ) async {
+    final generation = ++_sourceGeneration;
     _lastSource = event;
 
     final accountId = event.accountId;
@@ -213,6 +240,9 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
     );
 
     if (accountId != null && _hasNewProgression(intelligence)) {
+      // Do not enqueue a write from a source event that has already lost a
+      // race with disconnect, reset, or a newer account/source event.
+      if (isClosed || generation != _sourceGeneration) return;
       for (final id in intelligence.newlyUnlockedAchievementIds) {
         progression = progression.withAchievement(id, now);
       }
@@ -221,11 +251,14 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
       }
       _progressionByAccount[accountId] = progression;
       try {
-        await _store.save(accountId, progression);
+        await _enqueuePersistence(
+          accountId,
+          () => _store.save(accountId, progression),
+        );
       } catch (_) {
         // Persistence is best-effort: progression still works this session.
       }
-      if (isClosed) return;
+      if (isClosed || generation != _sourceGeneration) return;
 
       // Recompute so recorded unlocks carry their timestamps and nothing is
       // reported as new twice.
@@ -238,6 +271,7 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
       );
     }
 
+    if (isClosed || generation != _sourceGeneration) return;
     emit(
       IntelligenceState(
         intelligence: intelligence,
@@ -256,16 +290,38 @@ class IntelligenceBloc extends Bloc<IntelligenceEvent, IntelligenceState> {
       intelligence.newlyUnlockedAchievementIds.isNotEmpty ||
       intelligence.newlyCompletedQuestKeys.isNotEmpty;
 
+  Future<void> _onAccountDisconnected(
+    IntelligenceAccountDisconnected event,
+    Emitter<IntelligenceState> _,
+  ) async {
+    // Invalidate a refresh/source event still writing the disconnected
+    // account's history. This event intentionally does not recompute derived
+    // achievements, because the account is no longer connected.
+    ++_sourceGeneration;
+    _progressionByAccount.remove(event.accountId);
+    try {
+      await _enqueuePersistence(
+        event.accountId,
+        () => _store.clear(event.accountId),
+      );
+    } catch (_) {
+      // Best-effort cleanup must not block the connection lifecycle.
+    }
+    _progressionByAccount.remove(event.accountId);
+  }
+
   Future<void> _onProgressionResetRequested(
     IntelligenceProgressionResetRequested event,
     Emitter<IntelligenceState> emit,
   ) async {
+    // Invalidate any source event still awaiting persistence before resetting.
+    ++_sourceGeneration;
     final accountId = state.accountId;
     if (accountId == null) return;
 
     _progressionByAccount.remove(accountId);
     try {
-      await _store.clear(accountId);
+      await _enqueuePersistence(accountId, () => _store.clear(accountId));
     } catch (_) {
       // Best-effort; in-memory history is forgotten either way.
     }

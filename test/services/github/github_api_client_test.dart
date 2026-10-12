@@ -199,6 +199,15 @@ void main() {
       );
     });
 
+    test('maps a non-object GraphQL response to ApiUnavailable', () async {
+      final client = clientReturning((_) => http.Response('[]', 200));
+
+      await expectLater(
+        client.postGraphQL('query { viewer { login } }'),
+        throwsA(isA<ApiUnavailable>()),
+      );
+    });
+
     test('throws when GraphQL returns errors without data', () async {
       final client = clientReturning(
         (_) => http.Response(

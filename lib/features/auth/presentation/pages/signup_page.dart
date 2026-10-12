@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/utils/email_validator.dart';
+import '../../../../core/widgets/cartoon_page_banner.dart';
 import '../../../../core/widgets/responsive_layout.dart';
 import '../bloc/auth.dart';
 
@@ -165,34 +167,12 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   Widget _buildHeader() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: AppColors.secondary.withValues(alpha: 0.3),
-              width: 1,
-            ),
-          ),
-          child: const Icon(
-            Icons.person_add_rounded,
-            color: AppColors.secondary,
-            size: 40,
-          ),
-        ),
-        AppSpacing.vSpaceLg,
-        Text('Create New Agent', style: AppTypography.headingLarge),
-        AppSpacing.vSpaceSm,
-        Text(
-          'Join the ranks of open source contributors',
-          style: AppTypography.bodyMedium,
-          textAlign: TextAlign.center,
-        ),
-      ],
+    return CartoonPageBanner(
+      eyebrow: 'Start your quest',
+      title: 'Create New Agent',
+      subtitle: 'Join the ranks of open source contributors',
+      icon: Icons.person_add_rounded,
+      accent: AppColors.secondary,
     );
   }
 
@@ -272,7 +252,7 @@ class _SignUpPageState extends State<SignUpPage> {
         if (value == null || value.trim().isEmpty) {
           return 'Email is required';
         }
-        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+        if (!EmailValidator.isValid(value)) {
           return 'Please enter a valid email address';
         }
         return null;

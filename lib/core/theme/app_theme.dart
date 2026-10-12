@@ -276,7 +276,13 @@ class AppTheme {
         surfaceTintColor: appBarSurfaceTint,
         elevation: isLight ? 1 : 2,
         shadowColor: softShadow,
-        shape: RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusMd),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppSpacing.borderRadiusLg,
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.72),
+            width: 1.2,
+          ),
+        ),
         margin: EdgeInsets.all(AppSpacing.cardMargin),
         clipBehavior: Clip.antiAlias,
       ),
@@ -295,7 +301,7 @@ class AppTheme {
           padding: AppSpacing.buttonPadding,
           minimumSize: const Size(64, 48),
           shape: RoundedRectangleBorder(
-            borderRadius: AppSpacing.borderRadiusSm,
+            borderRadius: AppSpacing.borderRadiusMd,
           ),
           textStyle: AppTypography.buttonMedium,
         ),
@@ -313,7 +319,7 @@ class AppTheme {
           padding: AppSpacing.buttonPadding,
           minimumSize: const Size(64, 48),
           shape: RoundedRectangleBorder(
-            borderRadius: AppSpacing.borderRadiusSm,
+            borderRadius: AppSpacing.borderRadiusMd,
           ),
           textStyle: AppTypography.buttonMedium,
         ),

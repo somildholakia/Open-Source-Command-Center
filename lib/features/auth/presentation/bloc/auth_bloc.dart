@@ -1,6 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/utils/email_validator.dart';
+import '../../data/models/user_model.dart';
 import '../../../../services/firebase/auth_service.dart';
+import '../../../../services/firebase/firebase_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -15,6 +19,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     : _authService = authService ?? AuthService.instance,
       super(const AuthInitial()) {
     on<AuthCheckRequested>(_onAuthCheckRequested);
+    on<AuthDemoSessionRequested>(_onDemoSessionRequested);
     on<AuthSignInRequested>(_onAuthSignInRequested);
     on<AuthSignUpRequested>(_onAuthSignUpRequested);
     on<AuthSignOutRequested>(_onAuthSignOutRequested);
@@ -38,6 +43,35 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  /// Allows visual/manual UI testing when Firebase isn't configured.
+  ///
+  /// This path is compiled into debug builds only and is rejected whenever
+  /// Firebase is initialized. It never creates a Firebase account.
+  void _onDemoSessionRequested(
+    AuthDemoSessionRequested event,
+    Emitter<AuthState> emit,
+  ) {
+    if (!kDebugMode || FirebaseService.instance.isInitialized) {
+      emit(
+        const AuthError(
+          message: 'Local preview is only available in debug builds without Firebase.',
+          type: AuthErrorType.unknown,
+        ),
+      );
+      return;
+    }
+
+    emit(
+      const AuthAuthenticated(
+        user: UserModel(
+          uid: 'local-demo',
+          email: 'demo@local.dev',
+          displayName: 'Demo Developer',
+        ),
+      ),
+    );
+  }
+
   /// Handle sign in request with email/password.
   Future<void> _onAuthSignInRequested(
     AuthSignInRequested event,
@@ -54,7 +88,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return;
     }
 
-    if (!_isValidEmail(event.email)) {
+    if (!EmailValidator.isValid(event.email)) {
       emit(
         const AuthError(
           message: 'Please enter a valid email address',
@@ -85,9 +119,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthAuthenticated(user: user));
     } on AuthFailure catch (f) {
       emit(AuthError(message: f.message, type: f.type));
-    } catch (e) {
+    } catch (_) {
       emit(
-        AuthError(message: 'Sign-in failed: $e', type: AuthErrorType.unknown),
+        const AuthError(
+          message: 'Sign-in failed. Please try again.',
+          type: AuthErrorType.unknown,
+        ),
       );
     }
   }
@@ -98,7 +135,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     // 1. Client-side validations
-    if (event.email.isEmpty || !_isValidEmail(event.email)) {
+    if (event.email.isEmpty || !EmailValidator.isValid(event.email)) {
       emit(
         const AuthError(
           message: 'Please enter a valid email address',
@@ -140,9 +177,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthAuthenticated(user: user));
     } on AuthFailure catch (f) {
       emit(AuthError(message: f.message, type: f.type));
-    } catch (e) {
+    } catch (_) {
       emit(
-        AuthError(message: 'Sign-up failed: $e', type: AuthErrorType.unknown),
+        const AuthError(
+          message: 'Sign-up failed. Please try again.',
+          type: AuthErrorType.unknown,
+        ),
       );
     }
   }
@@ -152,9 +192,33 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthSignOutRequested event,
     Emitter<AuthState> emit,
   ) async {
+    final previousUser = _authService.currentUser;
     emit(const AuthLoading());
-    await _authService.signOut();
-    emit(const AuthUnauthenticated());
+
+    try {
+      await _authService.signOut();
+      emit(const AuthUnauthenticated());
+    } on AuthFailure catch (failure) {
+      final user = _authService.currentUser ?? previousUser;
+      if (user == null) {
+        emit(const AuthUnauthenticated());
+      } else {
+        emit(AuthSignOutFailed(user: user, message: failure.message));
+      }
+    } catch (_) {
+      // Keep the authenticated screen and its actions available for retry.
+      final user = _authService.currentUser ?? previousUser;
+      if (user == null) {
+        emit(const AuthUnauthenticated());
+      } else {
+        emit(
+          AuthSignOutFailed(
+            user: user,
+            message: 'Could not sign out. Please try again.',
+          ),
+        );
+      }
+    }
   }
 
   /// Handle password reset request.
@@ -162,7 +226,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthPasswordResetRequested event,
     Emitter<AuthState> emit,
   ) async {
-    if (event.email.isEmpty || !_isValidEmail(event.email)) {
+    if (event.email.isEmpty || !EmailValidator.isValid(event.email)) {
       emit(
         const AuthError(
           message: 'Please enter a valid email address',
@@ -172,14 +236,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return;
     }
 
-    await _authService.sendPasswordResetEmail(event.email.trim());
-    // Note: Password reset sends an email; the state stays unauthenticated
-    // (the UI shows a snackbar confirmation).
-  }
-
-  /// Simple email validation.
-  bool _isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email.trim());
+    final sent = await _authService.sendPasswordResetEmail(event.email.trim());
+    emit(
+      AuthPasswordResetResult(
+        success: sent,
+        message: sent
+            ? 'If an account exists for that email, a reset link has been sent.'
+            : 'Could not send a reset email. Check your connection and try again.',
+      ),
+    );
   }
 
   /// Check for common weak passwords.
