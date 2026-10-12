@@ -869,7 +869,8 @@ void main() {
         bloc.add(const IntegrationConnectRequested());
         await waitFor(
           bloc,
-          (state) => state.phase == IntegrationPhase.connected &&
+          (state) =>
+              state.phase == IntegrationPhase.connected &&
               state.connection?.account?.username == 'octocat',
         );
         final disconnectsBeforeRelease = provider.disconnectCalls;
