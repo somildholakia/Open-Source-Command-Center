@@ -503,6 +503,33 @@ void main() {
       },
     );
 
+    test('surfaces provider cleanup failure instead of claiming disconnect', () async {
+      SharedPreferences.setMockInitialValues({});
+      final provider = FakeDeveloperProvider(
+        connected: true,
+        disconnectFailure: const UnknownProviderError(
+          detail: 'secure credential deletion failed',
+        ),
+      );
+      final store = InMemoryConnectionStore(connectedRecord());
+      final bloc = IntegrationBloc(
+        provider: provider,
+        storeFactory: () async => store,
+      );
+
+      bloc.add(const IntegrationDisconnectRequested());
+      await waitFor(
+        bloc,
+        (state) =>
+            state.phase == IntegrationPhase.error && state.failure != null,
+      );
+
+      expect(bloc.state.failure, isA<UnknownProviderError>());
+      expect(bloc.state.isConnected, isFalse);
+      expect(provider.disconnectCalls, 1);
+      await bloc.close();
+    });
+
     test('clears this account cache on explicit GitHub disconnect', () async {
       SharedPreferences.setMockInitialValues({});
       final preferences = await SharedPreferences.getInstance();
