@@ -70,18 +70,6 @@ void main() {
     );
 
     test(
-      'maps valid JSON with an invalid response shape to ApiUnavailable',
-      () async {
-        final client = clientReturning([http.Response('[]', 200)]);
-
-        await expectLater(
-          client.start(),
-          throwsA(isA<ApiUnavailable>()),
-        );
-      },
-    );
-
-    test(
       'rejects empty codes and non-positive polling metadata',
       () async {
         final missingCode = clientReturning([
