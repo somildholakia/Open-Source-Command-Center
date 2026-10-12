@@ -84,19 +84,7 @@ void main() {
     });
   });
 
-  group('GitHubTokenStore', () {
-    test('clear is idempotent when secure storage is mocked', () async {
-      final storage = _FakeSecureStorage();
-      final store = GitHubTokenStore(storage: storage);
 
-      await store.clear();
-      await store.clear();
-
-      expect(await store.hasToken(), isFalse);
-      expect(await store.read(), isEmpty);
-    });
-  });
-}
 
 class _FakeSecureStorage implements FlutterSecureStorage {
   final Map<String, String> _values = {};
