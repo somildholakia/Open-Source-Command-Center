@@ -16,7 +16,9 @@ void main() {
           key: any(named: 'key'),
           value: any(named: 'value'),
         ),
-      ).thenThrow(StateError('secure storage unavailable'));
+      ).thenThrow(
+        StateError('secure storage unavailable'),
+      );
 
       final tokenStore = GitHubTokenStore(storage: storage);
 
