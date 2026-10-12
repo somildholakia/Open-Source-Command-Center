@@ -503,7 +503,9 @@ void main() {
       },
     );
 
-    test('surfaces provider cleanup failure instead of claiming disconnect', () async {
+    test(
+      'surfaces provider cleanup failure instead of claiming disconnect',
+      () async {
       SharedPreferences.setMockInitialValues({});
       final provider = FakeDeveloperProvider(
         connected: true,
@@ -527,8 +529,9 @@ void main() {
       expect(bloc.state.failure, isA<UnknownProviderError>());
       expect(bloc.state.isConnected, isFalse);
       expect(provider.disconnectCalls, 1);
-      await bloc.close();
-    });
+        await bloc.close();
+      },
+    );
 
     test('clears this account cache on explicit GitHub disconnect', () async {
       SharedPreferences.setMockInitialValues({});
