@@ -878,7 +878,8 @@ void main() {
         gate.complete();
         await waitFor(
           bloc,
-          (state) => !state.isBusy && state.phase == IntegrationPhase.connected,
+          (state) =>
+              !state.isBusy && state.phase == IntegrationPhase.connected,
         );
         await Future<void>.delayed(Duration.zero);
 
