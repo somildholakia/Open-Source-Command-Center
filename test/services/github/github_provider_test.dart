@@ -161,7 +161,6 @@ void main() {
       _MockFlutterSecureStorage secureStorage() {
     final storage = _MockFlutterSecureStorage();
     final values = <String, String>{};
-
     when(
       () => storage.write(
         key: any(named: 'key'),
@@ -182,46 +181,41 @@ void main() {
         values[key] = value;
       }
     });
-    when(
-      () => storage.read(
-        key: any(named: 'key'),
-        aOptions: any(named: 'aOptions'),
-        iOptions: any(named: 'iOptions'),
-        lOptions: any(named: 'lOptions'),
-        wOptions: any(named: 'wOptions'),
-        mOptions: any(named: 'mOptions'),
-        webOptions: any(named: 'webOptions'),
-      ),
-    ).thenAnswer((invocation) async => values[invocation.namedArguments[#key] as String]);
-    when(
-      () => storage.containsKey(
-        key: any(named: 'key'),
-        aOptions: any(named: 'aOptions'),
-        iOptions: any(named: 'iOptions'),
-        lOptions: any(named: 'lOptions'),
-        wOptions: any(named: 'wOptions'),
-        mOptions: any(named: 'mOptions'),
-        webOptions: any(named: 'webOptions'),
-      ),
-    ).thenAnswer((invocation) async => values.containsKey(invocation.namedArguments[#key] as String));
-    when(
-      () => storage.delete(
-        key: any(named: 'key'),
-        aOptions: any(named: 'aOptions'),
-        iOptions: any(named: 'iOptions'),
-        lOptions: any(named: 'lOptions'),
-        wOptions: any(named: 'wOptions'),
-        mOptions: any(named: 'mOptions'),
-        webOptions: any(named: 'webOptions'),
-      ),
-    ).thenAnswer((invocation) async {
+    when(() => storage.read(
+      key: any(named: 'key'),
+      aOptions: any(named: 'aOptions'),
+      iOptions: any(named: 'iOptions'),
+      lOptions: any(named: 'lOptions'),
+      wOptions: any(named: 'wOptions'),
+      mOptions: any(named: 'mOptions'),
+      webOptions: any(named: 'webOptions'),
+    )).thenAnswer((invocation) async =>
+        values[invocation.namedArguments[#key] as String]);
+    when(() => storage.containsKey(
+      key: any(named: 'key'),
+      aOptions: any(named: 'aOptions'),
+      iOptions: any(named: 'iOptions'),
+      lOptions: any(named: 'lOptions'),
+      wOptions: any(named: 'wOptions'),
+      mOptions: any(named: 'mOptions'),
+      webOptions: any(named: 'webOptions'),
+    )).thenAnswer((invocation) async =>
+        values.containsKey(invocation.namedArguments[#key] as String));
+    when(() => storage.delete(
+      key: any(named: 'key'),
+      aOptions: any(named: 'aOptions'),
+      iOptions: any(named: 'iOptions'),
+      lOptions: any(named: 'lOptions'),
+      wOptions: any(named: 'wOptions'),
+      mOptions: any(named: 'mOptions'),
+      webOptions: any(named: 'webOptions'),
+    )).thenAnswer((invocation) async {
       values.remove(invocation.namedArguments[#key] as String);
     });
-
     return storage;
   }
 
-GitHubProvider buildProvider({
+  GitHubProvider buildProvider({
     required http.Client client,
     FakeGitHubFirebaseLinker? linker,
     InMemoryConnectionStore? store,
