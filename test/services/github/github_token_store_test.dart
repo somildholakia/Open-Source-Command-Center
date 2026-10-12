@@ -48,6 +48,16 @@ void main() {
       expect(await tokenStore.read(), isEmpty);
     });
 
+    test('propagates secure-storage delete failures', () async {
+      final storage = _FailingSecureStorage();
+      when(() => storage.delete(key: any(named: 'key')))
+          .thenThrow(StateError('secure storage unavailable'));
+
+      final tokenStore = GitHubTokenStore(storage: storage);
+
+      await expectLater(tokenStore.clear(), throwsA(isA<StateError>()));
+    });
+
     test('propagates secure-storage read failures', () async {
       final storage = _FailingSecureStorage();
       when(() => storage.read(key: any(named: 'key')))
