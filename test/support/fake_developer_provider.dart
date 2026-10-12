@@ -45,9 +45,6 @@ class FakeDeveloperProvider implements DeveloperProvider {
   /// When set, every data capability awaits this first (test-controlled).
   Future<void> Function()? onFetch;
 
-  /// When set, disconnect pauses after marking the provider disconnected.
-  Future<void> Function()? onDisconnect;
-
   // Call accounting.
   int connectCalls = 0;
   int disconnectCalls = 0;
@@ -109,7 +106,6 @@ class FakeDeveloperProvider implements DeveloperProvider {
   Future<void> disconnect() async {
     disconnectCalls++;
     connected = false;
-    if (onDisconnect != null) await onDisconnect!();
   }
 
   @override
