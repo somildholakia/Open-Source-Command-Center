@@ -58,11 +58,21 @@ void main() {
 
       await expectLater(tokenStore.clear(), throwsA(isA<StateError>()));
 
-      expect(await tokenStore.hasToken(), isTrue);
+      expect(await tokenStore.hasToken(), isFalse);
       expect(await tokenStore.read(), isEmpty);
 
       await tokenStore.write('replacement-token');
       expect(await tokenStore.read(), 'replacement-token');
+    });
+
+
+    test('treats an empty stored token as unavailable', () async {
+      final storage = createSecureStorage();
+      await storage.write(key: 'github_oauth_access_token', value: '');
+      final tokenStore = GitHubTokenStore(storage: storage);
+
+      expect(await tokenStore.hasToken(), isFalse);
+      expect(await tokenStore.read(), isEmpty);
     });
 
     test('propagates secure-storage delete failures', () async {
