@@ -84,7 +84,7 @@ jobs:
         shell: bash
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
-          GITHUB_OAUTH_CLIENT_ID: ${{ vars.GITHUB_OAUTH_CLIENT_ID }}
+          GH_OAUTH_CLIENT_ID: ${{ vars.GH_OAUTH_CLIENT_ID }}
         run: |
           if [[ -n "$GOOGLE_SERVICES_JSON" ]]; then
             printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
@@ -93,12 +93,12 @@ jobs:
             echo "::warning::GOOGLE_SERVICES_JSON secret is not configured; Firebase authentication will not work in this APK."
           fi
 
-          if [[ -n "$GITHUB_OAUTH_CLIENT_ID" ]]; then
-            echo "GITHUB_OAUTH_CLIENT_ID=$GITHUB_OAUTH_CLIENT_ID" >> "$GITHUB_ENV"
+          if [[ -n "$GH_OAUTH_CLIENT_ID" ]]; then
+            echo "GITHUB_OAUTH_CLIENT_ID=$GH_OAUTH_CLIENT_ID" >> "$GITHUB_ENV"
             echo "GitHub device flow will be enabled in this APK."
           else
             echo "GITHUB_OAUTH_CLIENT_ID=" >> "$GITHUB_ENV"
-            echo "::warning::GITHUB_OAUTH_CLIENT_ID variable is not configured; GitHub connect will show the setup message."
+            echo "::warning::GH_OAUTH_CLIENT_ID variable is not configured; GitHub connect will show the setup message."
           fi
 
       - name: Build debug APK
