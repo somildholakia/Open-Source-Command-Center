@@ -644,6 +644,44 @@ void main() {
     );
 
     test(
+      'a stale connect completion does not disconnect a newer authorization',
+      () async {
+        final firstGate = Completer<void>();
+        final secondGate = Completer<void>();
+        final provider = FakeDeveloperProvider();
+        provider.onConnect = () {
+          return provider.connectCalls == 1
+              ? firstGate.future
+              : secondGate.future;
+        };
+        final store = InMemoryConnectionStore();
+        final bloc = IntegrationBloc(
+          provider: provider,
+          storeFactory: () async => store,
+        );
+
+        bloc.add(const IntegrationConnectRequested());
+        await waitFor(bloc, (state) => provider.connectCalls == 1);
+
+        bloc.add(const IntegrationConnectRequested());
+        await waitFor(bloc, (state) => provider.connectCalls == 2);
+
+        firstGate.complete();
+        await Future<void>.delayed(Duration.zero);
+        expect(provider.disconnectCalls, 0);
+        expect(bloc.state.phase, IntegrationPhase.connecting);
+
+        secondGate.complete();
+        await waitFor(bloc, (state) => state.phase == IntegrationPhase.connected);
+
+        expect(provider.disconnectCalls, 0);
+        expect(bloc.state.connection?.account?.username, 'octocat');
+        expect(store.record?.account?.username, 'octocat');
+        await bloc.close();
+      },
+    );
+
+    test(
       'cancellation returns to disconnected without an error card',
       () async {
         final gate = Completer<void>();

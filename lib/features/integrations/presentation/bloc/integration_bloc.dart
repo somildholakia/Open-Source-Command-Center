@@ -618,19 +618,16 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
         },
       );
 
-      if (generation != _lifecycleGeneration) {
-        await provider.disconnect();
-        return;
-      }
+      // The event that superseded this request owns the new provider
+      // lifecycle. Do not disconnect here: a newer authorization may already
+      // be in flight on the same provider instance.
+      if (generation != _lifecycleGeneration) return;
       final record = ProviderConnectionRecord.connected(
         providerId: provider.providerId,
         account: result.account,
       );
       final store = await _store();
-      if (generation != _lifecycleGeneration) {
-        await provider.disconnect();
-        return;
-      }
+      if (generation != _lifecycleGeneration) return;
       await store.save(record);
       if (generation != _lifecycleGeneration) return;
 
