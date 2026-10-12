@@ -84,29 +84,4 @@ void main() {
     });
   });
 
-
-
-class _FakeSecureStorage implements FlutterSecureStorage {
-  final Map<String, String> _values = {};
-
-  @override
-  Future<void> write({required String key, required String? value}) async {
-    if (value == null) {
-      _values.remove(key);
-    } else {
-      _values[key] = value;
-    }
-  }
-
-  @override
-  Future<String?> read({required String key}) async => _values[key];
-
-  @override
-  Future<bool> containsKey({required String key}) async =>
-      _values.containsKey(key);
-
-  @override
-  Future<void> delete({required String key}) async {
-    _values.remove(key);
-  }
 }
