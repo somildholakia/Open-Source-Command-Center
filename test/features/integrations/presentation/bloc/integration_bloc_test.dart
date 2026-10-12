@@ -548,10 +548,7 @@ void main() {
         );
 
         bloc.add(const IntegrationStarted());
-        await waitFor(
-          bloc,
-          (state) => !state.isBusy && state.profile != null,
-        );
+        await waitFor(bloc, (state) => !state.isBusy && state.profile != null);
 
         bloc.add(const IntegrationDisconnectRequested());
         await waitFor(
