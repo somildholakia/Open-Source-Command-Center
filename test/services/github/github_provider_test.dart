@@ -167,7 +167,8 @@ void main() {
         client: client,
         clientId: 'test-client-id',
       ),
-      tokenStore: tokenStore ?? GitHubTokenStore(storage: createSecureStorage()),
+      tokenStore:
+          tokenStore ?? GitHubTokenStore(storage: createSecureStorage()),
       firebaseLinker: linker ?? FakeGitHubFirebaseLinker(),
       connectionStoreFactory: () async => store ?? InMemoryConnectionStore(),
     );
