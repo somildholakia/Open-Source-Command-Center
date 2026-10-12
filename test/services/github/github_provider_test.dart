@@ -158,77 +158,6 @@ void main() {
     });
   }
 
-  _MockFlutterSecureStorage secureStorage() {
-    final storage = _MockFlutterSecureStorage();
-    final values = <String, String>{};
-
-    when(
-      () => storage.write(
-        key: any(named: 'key'),
-        value: any(named: 'value'),
-        aOptions: any(named: 'aOptions'),
-        iOptions: any(named: 'iOptions'),
-        lOptions: any(named: 'lOptions'),
-        wOptions: any(named: 'wOptions'),
-        mOptions: any(named: 'mOptions'),
-        webOptions: any(named: 'webOptions'),
-      ),
-    ).thenAnswer((invocation) async {
-      final key = invocation.namedArguments[#key] as String;
-      final value = invocation.namedArguments[#value] as String?;
-      if (value == null) {
-        values.remove(key);
-      } else {
-        values[key] = value;
-      }
-    });
-
-    when(
-      () => storage.read(
-        key: any(named: 'key'),
-        aOptions: any(named: 'aOptions'),
-        iOptions: any(named: 'iOptions'),
-        lOptions: any(named: 'lOptions'),
-        wOptions: any(named: 'wOptions'),
-        mOptions: any(named: 'mOptions'),
-        webOptions: any(named: 'webOptions'),
-      ),
-    ).thenAnswer(
-      (invocation) async => values[invocation.namedArguments[#key] as String],
-    );
-
-    when(
-      () => storage.containsKey(
-        key: any(named: 'key'),
-        aOptions: any(named: 'aOptions'),
-        iOptions: any(named: 'iOptions'),
-        lOptions: any(named: 'lOptions'),
-        wOptions: any(named: 'wOptions'),
-        mOptions: any(named: 'mOptions'),
-        webOptions: any(named: 'webOptions'),
-      ),
-    ).thenAnswer(
-      (invocation) async =>
-          values.containsKey(invocation.namedArguments[#key] as String),
-    );
-
-    when(
-      () => storage.delete(
-        key: any(named: 'key'),
-        aOptions: any(named: 'aOptions'),
-        iOptions: any(named: 'iOptions'),
-        lOptions: any(named: 'lOptions'),
-        wOptions: any(named: 'wOptions'),
-        mOptions: any(named: 'mOptions'),
-        webOptions: any(named: 'webOptions'),
-      ),
-    ).thenAnswer((invocation) async {
-      values.remove(invocation.namedArguments[#key] as String);
-    });
-
-    return storage;
-  }
-
   GitHubProvider buildProvider({
     required http.Client client,
     FakeGitHubFirebaseLinker? linker,
@@ -241,7 +170,7 @@ void main() {
         client: client,
         clientId: 'test-client-id',
       ),
-      tokenStore: tokenStore ?? GitHubTokenStore(storage: secureStorage()),
+      tokenStore: tokenStore ?? GitHubTokenStore(storage: createSecureStorage()),
       firebaseLinker: linker ?? FakeGitHubFirebaseLinker(),
       connectionStoreFactory: () async => store ?? InMemoryConnectionStore(),
     );
