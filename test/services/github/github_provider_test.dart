@@ -485,6 +485,33 @@ void main() {
       expect(linker.unlinkCalls, 1);
     });
 
+    test('reports failure when secure credential deletion fails', () async {
+      final store = InMemoryConnectionStore();
+      final linker = FakeGitHubFirebaseLinker();
+      final tokenStore = GitHubTokenStore(
+        storage: createSecureStorage(failDelete: true),
+      );
+      final provider = buildProvider(
+        client: githubMock(),
+        linker: linker,
+        store: store,
+        tokenStore: tokenStore,
+      );
+
+      await provider.connect();
+
+      await expectLater(
+        provider.disconnect(),
+        throwsA(isA<UnknownProviderError>()),
+      );
+
+      expect(store.record, isNull);
+      expect(linker.unlinkCalls, 1);
+      // A failed secure delete must not be represented as a disconnected
+      // session: the credential remains persisted and needs user attention.
+      expect(await provider.isConnected(), isTrue);
+    });
+
     test('is idempotent when nothing is connected', () async {
       final provider = buildProvider(client: githubMock());
 
