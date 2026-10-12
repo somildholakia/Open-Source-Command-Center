@@ -12,8 +12,37 @@ import '../utils/failure_message.dart';
 ///
 /// Shows the user code to enter at the verification URL plus a shortcut to
 /// open the browser. Dispatches cancel through [IntegrationBloc].
-class GitHubAuthorizationPromptCard extends StatelessWidget {
+class GitHubAuthorizationPromptCard extends StatefulWidget {
   const GitHubAuthorizationPromptCard({super.key});
+
+  @override
+  State<GitHubAuthorizationPromptCard> createState() =>
+      _GitHubAuthorizationPromptCardState();
+}
+
+class _GitHubAuthorizationPromptCardState
+    extends State<GitHubAuthorizationPromptCard>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<IntegrationBloc>().add(
+        const IntegrationAuthorizationResumeRequested(),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
