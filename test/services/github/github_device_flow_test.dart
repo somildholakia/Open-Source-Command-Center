@@ -74,7 +74,10 @@ void main() {
       () async {
         final client = clientReturning([http.Response('[]', 200)]);
 
-        await expectLater(client.start(), throwsA(isA<ApiUnavailable>()));
+        await expectLater(
+          client.start(),
+          throwsA(isA<ApiUnavailable>()),
+        );
       },
     );
 
