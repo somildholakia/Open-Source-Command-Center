@@ -7,7 +7,7 @@ A mobile-first Flutter app that turns open-source contribution into a personal d
 - **Playful, colorful UI:** original cartoon-inspired visuals, warm accent colors, friendly progression feedback, and responsive layouts.
 - **GitHub-connected:** authorized access to your profile, repositories, public activity, and contribution data.
 - **Local-first:** preferences and progression live on the device; normalized GitHub snapshots are cached locally so the app can display last-known data offline and clearly label it as stale when refresh fails.
-- **Privacy-aware:** GitHub credentials belong in device-secure storage, never in plain preferences or logs.
+- **Privacy-aware:** GitHub credentials belong in device-secure storage, never in plain preferences or logs. Credential-deletion failures are surfaced rather than silently reported as a successful disconnect.
 - **Mobile-first and responsive:** designed for compact Android phones first, with adaptive layouts for larger screens.
 
 ## Current features
