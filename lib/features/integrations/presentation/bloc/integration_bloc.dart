@@ -701,8 +701,7 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
         const IntegrationState(
           phase: IntegrationPhase.error,
           failure: UnknownProviderError(
-            detail:
-                'GitHub could not confirm credential removal. Check secure storage and retry.',
+            detail: 'Could not confirm GitHub credential removal.',
           ),
         ),
       );
