@@ -55,7 +55,10 @@ void main() {
 
       final tokenStore = GitHubTokenStore(storage: storage);
 
-      await expectLater(tokenStore.clear(), throwsA(isA<StateError>()));
+      await expectLater(
+        tokenStore.clear(),
+        throwsA(isA<StateError>()),
+      );
     });
 
     test('propagates secure-storage read failures', () async {
