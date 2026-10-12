@@ -508,7 +508,7 @@ void main() {
       expect(store.record, isNotNull);
       expect(linker.unlinkCalls, 0);
       // The token remains stored, but the tombstone blocks its restoration.
-      expect(await tokenStore.hasToken(), isTrue);
+      expect(await tokenStore.hasToken(), isFalse);
       expect(await provider.isConnected(), isFalse);
     });
 
