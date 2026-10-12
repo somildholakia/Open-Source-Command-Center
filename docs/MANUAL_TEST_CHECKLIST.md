@@ -40,6 +40,10 @@ Do not paste Firebase configuration, client secrets, access tokens, or signing k
 
 ## Layout and accessibility
 
+The automated suite includes a compact-width dashboard smoke test at 320 logical
+pixels. This does not replace manual checks of every screen, theme, orientation,
+and text scale on an emulator or device.
+
 - [ ] Check a compact viewport around 320 logical pixels for horizontal overflow.
 - [ ] Check a regular phone viewport and rotate to landscape.
 - [ ] Check a tablet-width viewport if available.
