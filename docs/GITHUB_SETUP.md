@@ -175,6 +175,11 @@ with a confirmation dialog). Disconnecting:
 - Returns Dashboard, Activity, and Contributions to their sample-data preview
   states.
 
+If secure storage cannot confirm token deletion, the app reports a disconnect
+error instead of claiming success. Retry after resolving the device's secure
+storage issue; GitHub authorization on the website is not revoked by a local
+disconnect.
+
 The GitHub authorization itself remains on the user's GitHub account until they
 revoke it in **GitHub → Settings → Applications**; the app cannot revoke it
 server-side without a backend, which is a planned backend responsibility.
