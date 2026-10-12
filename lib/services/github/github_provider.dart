@@ -210,29 +210,24 @@ class GitHubProvider implements DeveloperProvider {
     _authorizationGeneration++;
     _accessToken = '';
 
-    Object? credentialClearFailure;
     try {
       await _tokenStore.clear();
-    } catch (error) {
-      // Continue cleaning metadata and Firebase, but never report a complete
-      // disconnect when the credential may still be persisted on this device.
-      credentialClearFailure = error;
+    } catch (_) {
+      // Preserve connection metadata and Firebase linkage so the user can
+      // retry disconnect when secure credential deletion fails.
+      throw UnknownProviderError(
+        detail: 'Could not securely remove the saved GitHub credential.',
+      );
     }
 
     try {
       final store = await _connectionStoreFactory();
       await store.clear();
     } catch (_) {
-      // Best-effort metadata cleanup; secure credential deletion is separate.
+      // Best-effort metadata cleanup after the credential has been removed.
     }
 
     await _firebaseLinker.unlinkGitHub();
-
-    if (credentialClearFailure != null) {
-      throw UnknownProviderError(
-        detail: 'Could not securely remove the saved GitHub credential.',
-      );
-    }
   }
 
   // ---------------------------------------------------------------------------
