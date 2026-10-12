@@ -46,10 +46,6 @@ class GitHubTokenStore {
 
   /// Removes the token. Idempotent.
   Future<void> clear() async {
-    try {
-      await _storage.delete(key: _key);
-    } catch (_) {
-      // Nothing to clear.
-    }
+    await _storage.delete(key: _key);
   }
 }
