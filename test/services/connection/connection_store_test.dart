@@ -83,5 +83,4 @@ void main() {
       expect(store.load(), isNull);
     });
   });
-
 }
