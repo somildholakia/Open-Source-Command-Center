@@ -650,9 +650,7 @@ void main() {
         final secondGate = Completer<void>();
         final provider = FakeDeveloperProvider();
         provider.onConnect = () =>
-            provider.connectCalls == 1
-                ? firstGate.future
-                : secondGate.future;
+            provider.connectCalls == 1 ? firstGate.future : secondGate.future;
         final store = InMemoryConnectionStore();
         final bloc = IntegrationBloc(
           provider: provider,
