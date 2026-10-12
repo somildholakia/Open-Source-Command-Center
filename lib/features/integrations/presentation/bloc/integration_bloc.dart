@@ -753,7 +753,14 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
         repositories is AuthorizationExpired ||
         activities is AuthorizationExpired ||
         contributions is AuthorizationExpired) {
+      // The lifecycle can change while the provider disconnects (for example,
+      // a user starts a new connection). Never let stale expiry tear down or
+      // overwrite that newer lifecycle.
       await provider.disconnect();
+      if (!_isRefreshCurrent(generation, accountId)) {
+        await _reconcileStaleRefreshPersistence(accountId);
+        return;
+      }
       emit(
         IntegrationState(
           phase: IntegrationPhase.expired,
