@@ -505,10 +505,9 @@ void main() {
         throwsA(isA<UnknownProviderError>()),
       );
 
-      expect(store.record, isNull);
-      expect(linker.unlinkCalls, 1);
-      // A failed secure delete must not be represented as a disconnected
-      // session: the credential remains persisted and needs user attention.
+      expect(store.record, isNotNull);
+      expect(linker.unlinkCalls, 0);
+      // A failed secure delete must preserve the connection for a retry.
       expect(await provider.isConnected(), isTrue);
     });
 
