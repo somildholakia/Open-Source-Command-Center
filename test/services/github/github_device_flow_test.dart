@@ -69,41 +69,53 @@ void main() {
       },
     );
 
-    test('maps valid JSON with an invalid response shape to ApiUnavailable', () async {
-      final client = clientReturning([http.Response('[]', 200)]);
+    test(
+      'maps valid JSON with an invalid response shape to ApiUnavailable',
+      () async {
+        final client = clientReturning([http.Response('[]', 200)]);
 
-      await expectLater(client.start(), throwsA(isA<ApiUnavailable>()));
-    });
+        await expectLater(client.start(), throwsA(isA<ApiUnavailable>()));
+      },
+    );
 
-    test('rejects empty codes and non-positive polling metadata', () async {
-      final missingCode = clientReturning([
-        http.Response(
-          jsonEncode({
-            'device_code': '',
-            'user_code': 'WDJB-MJHT',
-            'verification_uri': 'https://github.com/login/device',
-            'interval': 5,
-            'expires_in': 900,
-          }),
-          200,
-        ),
-      ]);
-      await expectLater(missingCode.start(), throwsA(isA<ApiUnavailable>()));
+    test(
+      'rejects empty codes and non-positive polling metadata',
+      () async {
+        final missingCode = clientReturning([
+          http.Response(
+            jsonEncode({
+              'device_code': '',
+              'user_code': 'WDJB-MJHT',
+              'verification_uri': 'https://github.com/login/device',
+              'interval': 5,
+              'expires_in': 900,
+            }),
+            200,
+          ),
+        ]);
+        await expectLater(
+          missingCode.start(),
+          throwsA(isA<ApiUnavailable>()),
+        );
 
-      final invalidTiming = clientReturning([
-        http.Response(
-          jsonEncode({
-            'device_code': 'device-123',
-            'user_code': 'WDJB-MJHT',
-            'verification_uri': 'https://github.com/login/device',
-            'interval': 0,
-            'expires_in': 900,
-          }),
-          200,
-        ),
-      ]);
-      await expectLater(invalidTiming.start(), throwsA(isA<ApiUnavailable>()));
-    });
+        final invalidTiming = clientReturning([
+          http.Response(
+            jsonEncode({
+              'device_code': 'device-123',
+              'user_code': 'WDJB-MJHT',
+              'verification_uri': 'https://github.com/login/device',
+              'interval': 0,
+              'expires_in': 900,
+            }),
+            200,
+          ),
+        ]);
+        await expectLater(
+          invalidTiming.start(),
+          throwsA(isA<ApiUnavailable>()),
+        );
+      },
+    );
 
     test(
       'fails with a configuration message when no client id is available',
