@@ -23,8 +23,13 @@ class GitHubTokenStore {
             aOptions: AndroidOptions(encryptedSharedPreferences: true),
           );
 
-  /// Whether a token exists in secure storage.
+  /// Whether a usable token exists in secure storage.
+  ///
+  /// A token is not usable while disconnect cleanup is pending, even if a
+  /// failed deletion left its value behind. Keep this consistent with [read].
   Future<bool> hasToken() async {
+    final disconnectPending = await _storage.read(key: _disconnectPendingKey);
+    if (disconnectPending == 'true') return false;
     return await _storage.containsKey(key: _key);
   }
 
