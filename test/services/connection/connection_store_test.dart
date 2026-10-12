@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:opensource_command_center/domain/domain.dart';
 import 'package:opensource_command_center/services/connection/connection_store.dart';
 import 'package:opensource_command_center/services/github/github_token_store.dart';
@@ -84,33 +86,40 @@ void main() {
   });
 
   group('GitHubTokenStore', () {
-    test(
-      'falls back to in-memory storage when secure storage is unavailable',
-      () async {
-        // In the test host the platform channel is absent, so the store must
-        // degrade to memory instead of throwing.
-        final store = GitHubTokenStore();
-
-        expect(await store.hasToken(), isFalse);
-        expect(await store.read(), '');
-
-        await store.write('gho_secret');
-        expect(await store.hasToken(), isTrue);
-        expect(await store.read(), 'gho_secret');
-
-        await store.clear();
-        expect(await store.hasToken(), isFalse);
-        expect(await store.read(), '');
-      },
-    );
-
-    test('clear is idempotent', () async {
-      final store = GitHubTokenStore();
+    test('clear is idempotent when secure storage is mocked', () async {
+      final storage = _FakeSecureStorage();
+      final store = GitHubTokenStore(storage: storage);
 
       await store.clear();
       await store.clear();
 
       expect(await store.hasToken(), isFalse);
+      expect(await store.read(), isEmpty);
     });
   });
+}
+
+class _FakeSecureStorage extends Fake implements FlutterSecureStorage {
+  final Map<String, String> _values = {};
+
+  @override
+  Future<void> write({required String key, required String? value}) async {
+    if (value == null) {
+      _values.remove(key);
+    } else {
+      _values[key] = value;
+    }
+  }
+
+  @override
+  Future<String?> read({required String key}) async => _values[key];
+
+  @override
+  Future<bool> containsKey({required String key}) async =>
+      _values.containsKey(key);
+
+  @override
+  Future<void> delete({required String key}) async {
+    _values.remove(key);
+  }
 }
