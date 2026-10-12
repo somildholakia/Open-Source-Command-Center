@@ -30,7 +30,7 @@ class GitHubTokenStore {
   Future<bool> hasToken() async {
     final disconnectPending = await _storage.read(key: _disconnectPendingKey);
     if (disconnectPending == 'true') return false;
-    return await _storage.containsKey(key: _key);
+    return (await _storage.read(key: _key))?.isNotEmpty ?? false;
   }
 
   /// Reads the token, or an empty string when absent.
