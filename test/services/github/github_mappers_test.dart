@@ -247,27 +247,30 @@ void main() {
       expect(GitHubMappers.activityFromJson(event('GollumEvent', {})), isNull);
     });
 
-    test('activitiesFromJson skips malformed events without dropping valid ones', () {
-      final activities = GitHubMappers.activitiesFromJson([
-        event('PushEvent', {
-          'ref': 'refs/heads/main',
-          'commits': [
-            {'message': 'valid push'},
-          ],
-        }),
-        event('PullRequestEvent', {
-          'action': 'opened',
-          'pull_request': 'unexpected payload shape',
-        }),
-        event('ForkEvent', {}),
-      ]);
+    test(
+      'activitiesFromJson skips malformed events without dropping valid ones',
+      () {
+        final activities = GitHubMappers.activitiesFromJson([
+          event('PushEvent', {
+            'ref': 'refs/heads/main',
+            'commits': [
+              {'message': 'valid push'},
+            ],
+          }),
+          event('PullRequestEvent', {
+            'action': 'opened',
+            'pull_request': 'unexpected payload shape',
+          }),
+          event('ForkEvent', {}),
+        ]);
 
-      expect(activities, hasLength(2));
-      expect(activities.map((activity) => activity.type), [
-        DeveloperActivityType.commitPushed,
-        DeveloperActivityType.repositoryForked,
-      ]);
-    });
+        expect(activities, hasLength(2));
+        expect(activities.map((activity) => activity.type), [
+          DeveloperActivityType.commitPushed,
+          DeveloperActivityType.repositoryForked,
+        ]);
+      },
+    );
 
     test('activitiesFromJson filters unsupported events', () {
       final activities = GitHubMappers.activitiesFromJson([
