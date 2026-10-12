@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:opensource_command_center/domain/domain.dart';
@@ -11,6 +12,32 @@ import 'package:opensource_command_center/services/github/github_provider.dart';
 import 'package:opensource_command_center/services/github/github_token_store.dart';
 
 import '../../support/in_memory_connection_store.dart';
+
+/// Test-only secure storage fake; avoids platform-channel dependencies.
+class _FakeSecureStorage implements FlutterSecureStorage {
+  final Map<String, String> _values = {};
+
+  @override
+  Future<void> write({required String key, required String? value}) async {
+    if (value == null) {
+      _values.remove(key);
+    } else {
+      _values[key] = value;
+    }
+  }
+
+  @override
+  Future<String?> read({required String key}) async => _values[key];
+
+  @override
+  Future<bool> containsKey({required String key}) async =>
+      _values.containsKey(key);
+
+  @override
+  Future<void> delete({required String key}) async {
+    _values.remove(key);
+  }
+}
 
 /// Records Firebase link/unlink calls without touching Firebase.
 class FakeGitHubFirebaseLinker implements GitHubFirebaseLinker {
@@ -166,7 +193,7 @@ void main() {
         client: client,
         clientId: 'test-client-id',
       ),
-      tokenStore: tokenStore ?? GitHubTokenStore(),
+      tokenStore: tokenStore ?? GitHubTokenStore(storage: _FakeSecureStorage()),
       firebaseLinker: linker ?? FakeGitHubFirebaseLinker(),
       connectionStoreFactory: () async => store ?? InMemoryConnectionStore(),
     );
@@ -206,7 +233,7 @@ void main() {
     });
 
     test('hydrates the saved token before restored API requests', () async {
-      final tokenStore = GitHubTokenStore();
+      final tokenStore = GitHubTokenStore(storage: _FakeSecureStorage());
       final store = InMemoryConnectionStore();
       final firstProvider = buildProvider(
         client: githubMock(),
@@ -238,7 +265,7 @@ void main() {
             client: githubMock(),
             clientId: '',
           ),
-          tokenStore: GitHubTokenStore(),
+          tokenStore: GitHubTokenStore(storage: _FakeSecureStorage()),
           firebaseLinker: FakeGitHubFirebaseLinker(),
           connectionStoreFactory: () async => InMemoryConnectionStore(),
         );
