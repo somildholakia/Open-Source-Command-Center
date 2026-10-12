@@ -604,6 +604,22 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     Emitter<IntegrationState> emit,
   ) async {
     final generation = ++_lifecycleGeneration;
+
+    // OAuth may have succeeded even if the follow-up profile request failed.
+    // Reuse that securely stored token before starting a second device flow,
+    // so Retry can recover without asking the user to enter another code.
+    try {
+      if (await provider.isConnected()) {
+        if (generation != _lifecycleGeneration) return;
+        add(const IntegrationStarted());
+        return;
+      }
+    } on ProviderFailure {
+      // If secure storage cannot be read, let the normal connection path
+      // report the actionable failure rather than hiding it here.
+      if (generation != _lifecycleGeneration) return;
+    }
+
     // Never display the previous account's data while a different account is
     // being authorized.
     emit(const IntegrationState(phase: IntegrationPhase.connecting));
