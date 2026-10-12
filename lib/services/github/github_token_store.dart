@@ -44,7 +44,10 @@ class GitHubTokenStore {
     await _storage.write(key: _key, value: token);
   }
 
-  /// Removes the token. Idempotent.
+  /// Removes the token.
+  ///
+  /// Deletion failures propagate so callers never claim the account is fully
+  /// disconnected while the credential may still be present on the device.
   Future<void> clear() async {
     await _storage.delete(key: _key);
   }
