@@ -3,7 +3,7 @@ import 'package:mocktail/mocktail.dart';
 
 class MockSecureStorage extends Mock implements FlutterSecureStorage {}
 
-MockSecureStorage createSecureStorage() {
+MockSecureStorage createSecureStorage({bool failDelete = false}) {
   final storage = MockSecureStorage();
   final values = <String, String>{};
 
@@ -67,6 +67,9 @@ MockSecureStorage createSecureStorage() {
       webOptions: any(named: 'webOptions'),
     ),
   ).thenAnswer((invocation) async {
+    if (failDelete) {
+      throw StateError('secure storage delete failed');
+    }
     values.remove(invocation.namedArguments[#key] as String);
   });
 
