@@ -844,7 +844,7 @@ void main() {
       },
     );
 
-      test(
+    test(
       'keeps a stale authorization expiry from replacing a newer lifecycle',
       () async {
         final gate = Completer<void>();
