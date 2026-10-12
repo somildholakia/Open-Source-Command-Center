@@ -852,12 +852,13 @@ void main() {
         final provider = FakeDeveloperProvider(
           connected: true,
           profile: sampleProfile(),
-        )..onDisconnect = () async {
-            if (!disconnectStarted.isCompleted) {
-              disconnectStarted.complete();
-            }
-            await disconnectGate.future;
-          };
+        );
+        provider.onDisconnect = () async {
+          if (!disconnectStarted.isCompleted) {
+            disconnectStarted.complete();
+          }
+          await disconnectGate.future;
+        };
         final bloc = IntegrationBloc(
           provider: provider,
           storeFactory: () async => InMemoryConnectionStore(connectedRecord()),
