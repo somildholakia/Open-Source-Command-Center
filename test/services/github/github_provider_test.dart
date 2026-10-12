@@ -310,7 +310,7 @@ void main() {
           }
           return http.Response('not found', 404);
         });
-        final tokenStore = GitHubTokenStore();
+        final tokenStore = GitHubTokenStore(storage: _FakeSecureStorage());
         final provider = buildProvider(client: client, tokenStore: tokenStore);
 
         final connecting = provider.connect();
@@ -367,7 +367,7 @@ void main() {
             return http.Response('not found', 404);
         }
       });
-      final tokenStore = GitHubTokenStore();
+      final tokenStore = GitHubTokenStore(storage: _FakeSecureStorage());
       final store = InMemoryConnectionStore();
       final linker = FakeGitHubFirebaseLinker();
       final provider = buildProvider(
