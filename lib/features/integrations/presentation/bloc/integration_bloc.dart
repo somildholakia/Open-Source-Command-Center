@@ -696,7 +696,17 @@ class IntegrationBloc extends Bloc<IntegrationEvent, IntegrationState> {
     try {
       await provider.disconnect();
     } catch (_) {
-      // Best-effort; local state is cleared regardless.
+      if (generation != _lifecycleGeneration) return;
+      emit(
+        const IntegrationState(
+          phase: IntegrationPhase.error,
+          failure: UnknownProviderError(
+            detail:
+                'GitHub could not confirm credential removal. Check secure storage and retry.',
+          ),
+        ),
+      );
+      return;
     }
     if (generation != _lifecycleGeneration) return;
 
