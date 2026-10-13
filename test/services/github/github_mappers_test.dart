@@ -133,34 +133,36 @@ void main() {
     test(
       'does not invent a zero commit count when push size is missing',
       () {
-      final activity = GitHubMappers.activityFromJson(
-        event('PushEvent', {
-          'ref': 'refs/heads/feature/cartoon-local-first-redesign',
-          'commits': <Map<String, dynamic>>[],
-        }),
-      );
+        final activity = GitHubMappers.activityFromJson(
+          event('PushEvent', {
+            'ref': 'refs/heads/feature/cartoon-local-first-redesign',
+            'commits': <Map<String, dynamic>>[],
+          }),
+        );
 
-      expect(activity, isNotNull);
-      expect(
-        activity!.title,
-        'Pushed updates to feature/cartoon-local-first-redesign',
-      );
-      expect(activity.commitCount, isNull);
-    });
+        expect(activity, isNotNull);
+        expect(
+          activity!.title,
+          'Pushed updates to feature/cartoon-local-first-redesign',
+        );
+        expect(activity.commitCount, isNull);
+      },
+    );
 
     test(
       'uses payload size when the event omits its commit list',
       () {
-      final activity = GitHubMappers.activityFromJson(
-        event('PushEvent', {
-          'ref': 'refs/heads/main',
-          'size': 4,
-        }),
-      );
+        final activity = GitHubMappers.activityFromJson(
+          event('PushEvent', {
+            'ref': 'refs/heads/main',
+            'size': 4,
+          }),
+        );
 
-      expect(activity!.title, 'Pushed 4 commits to main');
-      expect(activity.commitCount, 4);
-    });
+        expect(activity!.title, 'Pushed 4 commits to main');
+        expect(activity.commitCount, 4);
+      },
+    );
 
     test('maps opened and merged pull request events', () {
       final opened = GitHubMappers.activityFromJson(
