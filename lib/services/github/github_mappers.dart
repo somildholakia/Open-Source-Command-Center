@@ -85,20 +85,28 @@ class GitHubMappers {
     switch (type) {
       case 'PushEvent':
         final commits = payload['commits'];
-        final count = commits is List
+        // The Events API commonly omits the commit list. Prefer its size
+        // field in that case, and never display a fabricated "0 commits"
+        // when GitHub does not provide a count.
+        final payloadSize = (payload['size'] as num?)?.toInt();
+        final count = commits is List && commits.isNotEmpty
             ? commits.length
-            : (payload['size'] as num?)?.toInt() ?? 0;
+            : (payloadSize != null && payloadSize > 0 ? payloadSize : null);
         final ref = (payload['ref'] ?? '') as String? ?? '';
         final branch = ref.replaceFirst('refs/heads/', '');
         final lastMessage = commits is List && commits.isNotEmpty
             ? ((commits.last as Map<String, dynamic>)['message'] ?? '')
                   as String
             : null;
+        final destination = branch.isEmpty ? 'a branch' : branch;
+        final title = count == null
+            ? 'Pushed updates to $destination'
+            : 'Pushed $count commit${count == 1 ? '' : 's'} to $destination';
         return DeveloperActivity(
           id: id,
           type: DeveloperActivityType.commitPushed,
           repository: repository,
-          title: 'Pushed $count commit${count == 1 ? '' : 's'} to $branch',
+          title: title,
           subtitle: lastMessage,
           rawType: type,
           timestamp: timestamp,
