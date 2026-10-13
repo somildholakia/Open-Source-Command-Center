@@ -51,6 +51,22 @@ void main() {
 
       expect(keys, {'2026-10-03', '2026-10-05'});
     });
+
+    test('stars alone do not count as an active contribution day', () {
+      final keys = StreakEngine.activeDateKeys(
+        activities: [
+          DeveloperActivity(
+            id: 'star',
+            type: DeveloperActivityType.starred,
+            repository: 'octocat/x',
+            title: 'star',
+            timestamp: DateTime(2026, 10, 8, 9),
+          ),
+        ],
+      );
+
+      expect(keys, isEmpty);
+    });
   });
 
   group('StreakEngine.fromActiveDateKeys', () {
