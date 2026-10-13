@@ -19,6 +19,9 @@ void main() {
       expect(StreakEngine.dateFromKey('nope'), isNull);
       expect(StreakEngine.dateFromKey('2026-10'), isNull);
       expect(StreakEngine.dateFromKey('2026-xx-05'), isNull);
+      expect(StreakEngine.dateFromKey('2026-13-01'), isNull);
+      expect(StreakEngine.dateFromKey('2026-02-30'), isNull);
+      expect(StreakEngine.dateFromKey('2026-1-05'), isNull);
     });
   });
 
@@ -27,6 +30,16 @@ void main() {
       final keys = StreakEngine.activeDateKeys(
         contributions: const ContributionSummary(
           dailyCounts: {'2026-10-04': 0, '2026-10-05': 2},
+        ),
+      );
+
+      expect(keys, {'2026-10-05'});
+    });
+
+    test('ignores malformed calendar date keys', () {
+      final keys = StreakEngine.activeDateKeys(
+        contributions: const ContributionSummary(
+          dailyCounts: {'2026-02-30': 4, '2026-10-05': 2},
         ),
       );
 
