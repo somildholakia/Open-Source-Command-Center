@@ -191,7 +191,10 @@ class DeveloperIntelligenceEngine {
     for (final activity in activities) {
       switch (activity.type) {
         case DeveloperActivityType.commitPushed:
-          commits += activity.commitCount ?? 1;
+          // A push event is not necessarily one commit. Count only the
+          // commit total GitHub actually supplied; unknown sizes must not
+          // unlock commit-count achievements as if they were one commit.
+          commits += activity.commitCount ?? 0;
           break;
         case DeveloperActivityType.pullRequestOpened:
           pullRequestsOpened++;
@@ -416,7 +419,7 @@ class DeveloperIntelligenceEngine {
         events++;
         switch (activity.type) {
           case DeveloperActivityType.commitPushed:
-            commits += activity.commitCount ?? 1;
+            commits += activity.commitCount ?? 0;
             break;
           case DeveloperActivityType.pullRequestOpened:
             pullRequestsOpened++;
