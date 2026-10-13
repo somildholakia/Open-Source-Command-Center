@@ -370,39 +370,39 @@ void main() {
     testWidgets(
       'breaks XP into activity, consistency, achievements and quests',
       (tester) async {
-       await tester.pumpWidget(
-         MaterialApp(
-           theme: AppTheme.darkTheme,
-           home: Scaffold(
-             body: ProgressXpBreakdownCard(
-               xp: const XpBreakdown(
-                 byActivityType: {
-                   DeveloperActivityType.pullRequestMerged: 50,
-                   DeveloperActivityType.commitPushed: 10,
-                 },
-                 activityXp: 60,
-                 activeDayXp: 40,
-                 achievementXp: 75,
-                 questXp: 25,
-                 totalXp: 200,
-                 eventsCounted: 2,
-               ),
-             ),
-           ),
-         ),
-       );
- 
-       expect(find.text('Activity'), findsOneWidget);
-       expect(find.text('Consistency'), findsOneWidget);
-       expect(find.text('Achievements'), findsOneWidget);
-       expect(find.text('Quests'), findsOneWidget);
-       expect(find.text('+25 XP'), findsOneWidget);
-       expect(find.text('+60 XP'), findsOneWidget);
-       expect(find.text('+40 XP'), findsOneWidget);
-       expect(find.text('+75 XP'), findsOneWidget);
-       // Top sources list the busiest activity types first.
-       expect(find.text('Pull requests merged +50'), findsOneWidget);
-       expect(find.text('Commits +10'), findsOneWidget);
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: Scaffold(
+              body: ProgressXpBreakdownCard(
+                xp: const XpBreakdown(
+                  byActivityType: {
+                    DeveloperActivityType.pullRequestMerged: 50,
+                    DeveloperActivityType.commitPushed: 10,
+                  },
+                  activityXp: 60,
+                  activeDayXp: 40,
+                  achievementXp: 75,
+                  questXp: 25,
+                  totalXp: 200,
+                  eventsCounted: 2,
+                ),
+              ),
+            ),
+          ),
+        );
+  
+        expect(find.text('Activity'), findsOneWidget);
+        expect(find.text('Consistency'), findsOneWidget);
+        expect(find.text('Achievements'), findsOneWidget);
+        expect(find.text('Quests'), findsOneWidget);
+        expect(find.text('+25 XP'), findsOneWidget);
+        expect(find.text('+60 XP'), findsOneWidget);
+        expect(find.text('+40 XP'), findsOneWidget);
+        expect(find.text('+75 XP'), findsOneWidget);
+        // Top sources list the busiest activity types first.
+        expect(find.text('Pull requests merged +50'), findsOneWidget);
+        expect(find.text('Commits +10'), findsOneWidget);
       },
     );
   });
