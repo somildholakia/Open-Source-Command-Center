@@ -17,7 +17,10 @@ String failureMessage(ProviderFailure failure) {
           ? 'in a little while'
           : 'after ${formatClock(resetAt)}';
       return 'GitHub rate limit reached. Try again $when.';
-    case NetworkUnavailable():
+    case NetworkUnavailable(:final stage):
+      if (stage != null) {
+        return 'Could not reach GitHub while $stage. Check your connection and try again.';
+      }
       return 'No network connection. Check your internet and try again.';
     case ApiUnavailable():
       return 'GitHub is temporarily unavailable. Try again shortly.';
