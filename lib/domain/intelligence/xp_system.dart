@@ -106,9 +106,8 @@ class XpRules {
 /// XP earned, broken down by source, so the UI can explain where it came from.
 ///
 /// Activity XP is recomputed from the current data window on every
-/// computation. Achievement XP is awarded once per achievement and is carried
-/// by the persisted [ProgressionRecord], so it survives the window rolling
-/// over.
+/// computation. Achievement and quest XP are backed by persisted progression
+/// records, so their one-time rewards survive the activity window rolling over.
 class XpBreakdown extends Equatable {
   /// XP from normalized activity events (keyed by activity type).
   final Map<DeveloperActivityType, int> byActivityType;
@@ -122,7 +121,10 @@ class XpBreakdown extends Equatable {
   /// XP from unlocked achievements (one-time rewards).
   final int achievementXp;
 
-  /// Total XP: [activityXp] + [activeDayXp] + [achievementXp].
+  /// XP from completed quest instances (one reward per persisted period key).
+  final int questXp;
+
+  /// Total XP from activity, consistency, achievements, and quests.
   final int totalXp;
 
   /// Number of activity events that contributed XP.
@@ -133,6 +135,7 @@ class XpBreakdown extends Equatable {
     this.activityXp = 0,
     this.activeDayXp = 0,
     this.achievementXp = 0,
+    this.questXp = 0,
     this.totalXp = 0,
     this.eventsCounted = 0,
   });
@@ -146,6 +149,7 @@ class XpBreakdown extends Equatable {
     activityXp,
     activeDayXp,
     achievementXp,
+    questXp,
     totalXp,
     eventsCounted,
   ];
