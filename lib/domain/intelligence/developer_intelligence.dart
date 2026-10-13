@@ -446,7 +446,9 @@ class DeveloperIntelligenceEngine {
     var issuesClosed = 0;
 
     for (final entry in eventsByDay.entries) {
-      if (entry.value.any((activity) => activity.type != DeveloperActivityType.starred)) {
+      if (entry.value.any(
+        (activity) => activity.type != DeveloperActivityType.starred,
+      )) {
         activeDays.add(entry.key);
       }
       for (final activity in entry.value) {
