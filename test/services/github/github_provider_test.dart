@@ -42,6 +42,7 @@ void main() {
   /// A MockClient simulating the GitHub device-flow + REST + GraphQL surface.
   MockClient githubMock({
     int pollSuccessAfter = 1,
+    int pollNetworkFailures = 0,
     Map<String, dynamic>? profile,
   }) {
     requests = [];
@@ -64,7 +65,10 @@ void main() {
       }
       if (path == '/login/oauth/access_token') {
         polls++;
-        if (polls < pollSuccessAfter) {
+        if (polls <= pollNetworkFailures) {
+          throw http.ClientException('Simulated temporary network failure');
+        }
+        if (polls - pollNetworkFailures < pollSuccessAfter) {
           return http.Response(
             jsonEncode({'error': 'authorization_pending'}),
             200,
@@ -205,6 +209,21 @@ void main() {
       // The GitHub identity is linked to the Firebase account (best effort).
       expect(linker.linkCalls, 1);
       expect(linker.lastToken, 'gho_test_token');
+    });
+
+    test('retries a transient network failure while polling authorization', () async {
+      final provider = buildProvider(
+        client: githubMock(pollNetworkFailures: 1),
+      );
+
+      final result = await provider.connect();
+
+      expect(result.account.username, 'octocat');
+      expect(
+        requests.where((r) => r.url.path == '/login/oauth/access_token'),
+        hasLength(2),
+      );
+      expect(await provider.isConnected(), isTrue);
     });
 
     test('hydrates the saved token before restored API requests', () async {
