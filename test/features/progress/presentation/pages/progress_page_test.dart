@@ -367,9 +367,9 @@ void main() {
   });
 
   group('ProgressXpBreakdownCard', () {
-    testWidgets('breaks XP into activity, consistency, achievements and quests', (
-      tester,
-    ) async {
+    testWidgets(
+      'breaks XP into activity, consistency, achievements and quests',
+      (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.darkTheme,
@@ -403,7 +403,8 @@ void main() {
       // Top sources list the busiest activity types first.
       expect(find.text('Pull requests merged +50'), findsOneWidget);
       expect(find.text('Commits +10'), findsOneWidget);
-    });
+      },
+    );
   });
 
   group('buildProgressShareText', () {
