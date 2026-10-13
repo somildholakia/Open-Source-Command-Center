@@ -70,12 +70,24 @@ class StreakEngine {
   /// Parses a `yyyy-MM-dd` key into local midnight, or null when malformed.
   static DateTime? dateFromKey(String key) {
     final parts = key.split('-');
-    if (parts.length != 3) return null;
+    if (parts.length != 3 ||
+        parts[0].length != 4 ||
+        parts[1].length != 2 ||
+        parts[2].length != 2) {
+      return null;
+    }
     final year = int.tryParse(parts[0]);
     final month = int.tryParse(parts[1]);
     final day = int.tryParse(parts[2]);
     if (year == null || month == null || day == null) return null;
-    return DateTime(year, month, day);
+
+    final date = DateTime(year, month, day);
+    // DateTime normalizes out-of-range components (e.g. February 30) rather
+    // than rejecting them, so verify the round-trip before accepting a key.
+    if (date.year != year || date.month != month || date.day != day) {
+      return null;
+    }
+    return date;
   }
 
   /// Local midnight of the day [value] falls on.
@@ -110,7 +122,9 @@ class StreakEngine {
     final counts = contributions?.dailyCounts;
     if (counts != null) {
       for (final entry in counts.entries) {
-        if (entry.value > 0) keys.add(entry.key);
+        if (entry.value > 0 && dateFromKey(entry.key) != null) {
+          keys.add(entry.key);
+        }
       }
     }
     for (final activity in activities) {
