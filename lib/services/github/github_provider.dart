@@ -116,13 +116,21 @@ class GitHubProvider implements DeveloperProvider {
           detail: 'The device code expired. Please try again.',
         );
       }
-      token = await _deviceFlow.poll(
-        start: start,
-        onSlowDown: () {
-          // GitHub requires at least five extra seconds after slow_down.
-          interval += const Duration(seconds: 5);
-        },
-      );
+      try {
+        token = await _deviceFlow.poll(
+          start: start,
+          onSlowDown: () {
+            // GitHub requires at least five extra seconds after slow_down.
+            interval += const Duration(seconds: 5);
+          },
+        );
+      } on NetworkUnavailable {
+        // A temporary mobile-network switch while the user is in the browser
+        // must not terminate device authorization. Keep polling until the
+        // device code expires, respecting GitHub's minimum polling interval.
+        await Future<void>.delayed(interval);
+        continue;
+      }
       // Cancellation may arrive while the network poll is in flight. Never
       // accept a token from a poll that outlived the authorization request.
       _ensureAuthorizationCurrent(generation);
