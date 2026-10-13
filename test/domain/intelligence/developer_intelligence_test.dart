@@ -176,6 +176,28 @@ void main() {
       expect(intelligence.metrics.activityEvents, 1);
     });
 
+    test('a star-only day earns no streak or consistency XP', () {
+      final intelligence = compute(
+        withActivities: [
+          event(
+            id: 'star-only',
+            type: DeveloperActivityType.starred,
+            at: DateTime(2026, 10, 8, 9),
+          ),
+        ],
+        withContributions: null,
+      );
+
+      expect(intelligence.metrics.activityEvents, 1);
+      expect(intelligence.metrics.totalContributions, 0);
+      expect(intelligence.metrics.activeDays, 0);
+      expect(intelligence.metrics.activeDaysThisWeek, 0);
+      expect(intelligence.metrics.currentStreak, 0);
+      expect(intelligence.metrics.eventsToday, 1);
+      expect(intelligence.xp.activeDayXp, 0);
+      expect(intelligence.xp.xpFor(DeveloperActivityType.starred), 0);
+    });
+
     test('repository stars and counts come from the repository list', () {
       final metrics = compute(
         repositories: [
