@@ -211,20 +211,23 @@ void main() {
       expect(linker.lastToken, 'gho_test_token');
     });
 
-    test('retries a transient network failure while polling authorization', () async {
-      final provider = buildProvider(
-        client: githubMock(pollNetworkFailures: 1),
-      );
+    test(
+      'retries a transient network failure while polling authorization',
+      () async {
+        final provider = buildProvider(
+          client: githubMock(pollNetworkFailures: 1),
+        );
 
-      final result = await provider.connect();
+        final result = await provider.connect();
 
-      expect(result.account.username, 'octocat');
-      expect(
-        requests.where((r) => r.url.path == '/login/oauth/access_token'),
-        hasLength(2),
-      );
-      expect(await provider.isConnected(), isTrue);
-    });
+        expect(result.account.username, 'octocat');
+        expect(
+          requests.where((r) => r.url.path == '/login/oauth/access_token'),
+          hasLength(2),
+        );
+        expect(await provider.isConnected(), isTrue);
+      },
+    );
 
     test('hydrates the saved token before restored API requests', () async {
       final tokenStore = GitHubTokenStore(storage: createSecureStorage());
