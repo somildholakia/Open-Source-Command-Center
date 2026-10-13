@@ -183,13 +183,13 @@ class StreakEngine {
     // --- Current streak: consecutive days ending today or yesterday. ---
     final activeToday = validKeys.contains(todayKey);
     final yesterday = _previousDay(today);
-    final activeYesterday = activeDateKeys.contains(dateKey(yesterday));
+    final activeYesterday = validKeys.contains(dateKey(yesterday));
 
     var current = 0;
     if (activeToday || activeYesterday) {
       // Walk backwards from today (or yesterday when today is still empty).
       var cursor = activeToday ? today : yesterday;
-      while (activeDateKeys.contains(dateKey(cursor))) {
+      while (validKeys.contains(dateKey(cursor))) {
         current++;
         cursor = _previousDay(cursor);
       }
