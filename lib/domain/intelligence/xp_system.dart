@@ -41,7 +41,10 @@ class XpRules {
   static int forActivity(DeveloperActivity activity) {
     switch (activity.type) {
       case DeveloperActivityType.commitPushed:
-        final commits = activity.commitCount ?? 1;
+        // Unknown push size is not evidence of a single commit. Award no
+        // commit XP until the provider supplies a count.
+        final commits = activity.commitCount;
+        if (commits == null) return 0;
         return commits.clamp(0, maxCommitsPerPush) * perCommit;
       case DeveloperActivityType.pullRequestOpened:
         return pullRequestOpened;
