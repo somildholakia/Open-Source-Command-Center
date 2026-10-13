@@ -16,13 +16,14 @@ class ContributionSummary extends Equatable {
   const ContributionSummary({required this.dailyCounts, this.fetchedAt});
 
   /// Total contributions across all days in the summary.
-  int get total => dailyCounts.entries.fold(
-    0,
-    (sum, entry) {
-      if (!_isValidDateKey(entry.key) || entry.value <= 0) return sum;
-      return sum + entry.value;
-    },
-  );
+  int get total {
+    var sum = 0;
+    for (final entry in dailyCounts.entries) {
+      if (!_isValidDateKey(entry.key) || entry.value <= 0) continue;
+      sum += entry.value;
+    }
+    return sum;
+  }
 
   /// Count on [date] (any time of day), or 0 when no data for that date.
   int countForDate(DateTime date) {
