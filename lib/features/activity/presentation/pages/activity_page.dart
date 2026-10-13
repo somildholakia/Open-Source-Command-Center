@@ -40,6 +40,20 @@ class _ActivityPageState extends State<ActivityPage> {
   ActivityFilter _filter = ActivityFilter.all;
 
   @override
+  void initState() {
+    super.initState();
+
+    // Reconcile the activity tab with the persisted GitHub session. This is
+    // intentionally limited to terminal states: do not interrupt an active
+    // device authorization or duplicate an already-running startup restore.
+    final integration = context.read<IntegrationBloc>();
+    if (integration.state.phase == IntegrationPhase.disconnected ||
+        integration.state.phase == IntegrationPhase.error) {
+      integration.add(const IntegrationStarted());
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
