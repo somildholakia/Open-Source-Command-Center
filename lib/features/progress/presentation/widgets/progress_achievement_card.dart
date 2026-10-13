@@ -115,7 +115,10 @@ class ProgressAchievementCard extends StatelessWidget {
                   ),
                 ),
                 AppSpacing.vSpaceXs,
-                Row(
+                Wrap(
+                  spacing: AppSpacing.xs,
+                  runSpacing: AppSpacing.xxs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       '${status.cappedProgress} / ${status.target}',
@@ -124,7 +127,6 @@ class ProgressAchievementCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    AppSpacing.hSpaceXs,
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.xs,
@@ -150,7 +152,6 @@ class ProgressAchievementCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const Spacer(),
                     if (unlocked && unlockedAt != null)
                       Text(
                         'unlocked ${formatTimeAgo(unlockedAt, now: now)}',
