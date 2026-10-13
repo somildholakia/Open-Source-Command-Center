@@ -131,6 +131,34 @@ void main() {
       expect(metrics.longestStreak, 6); // 10-01 .. 10-06
     });
 
+    test('an empty contribution calendar falls back to activity events', () {
+      final intelligence = compute(
+        withActivities: [
+          event(
+            id: 'commit-today',
+            type: DeveloperActivityType.commitPushed,
+            at: DateTime(2026, 10, 8, 9),
+            commitCount: 2,
+          ),
+          event(
+            id: 'merge-today',
+            type: DeveloperActivityType.pullRequestMerged,
+            at: DateTime(2026, 10, 8, 10),
+          ),
+          event(
+            id: 'star-today',
+            type: DeveloperActivityType.starred,
+            at: DateTime(2026, 10, 8, 11),
+          ),
+        ],
+        withContributions: const ContributionSummary(dailyCounts: {}),
+      );
+
+      expect(intelligence.metrics.totalContributions, 2);
+      expect(intelligence.metrics.contributionsToday, 2);
+      expect(intelligence.metrics.eventsToday, 3);
+    });
+
     test('unknown push size does not count as one commit', () {
       final intelligence = compute(
         withActivities: [
