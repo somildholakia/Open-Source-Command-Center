@@ -47,9 +47,9 @@ void main() {
 
   /// The connected snapshot the page tests run against.
   ///
-  /// Expected engine output: activity XP 60 (merge 50 + push 2x5), consistency
-  /// XP 40 (4 active days), achievement XP 115 (first contribution 25 +
-  /// warm-up 40 + first merge 50) = 215 XP -> level 2, 115/200 into level 2.
+  /// Expected engine output: activity XP 60, consistency XP 40, achievement XP
+  /// 115, and quest XP 165 (daily contribution 25 + weekly contributions 60 +
+  /// weekly consistency 80) = 380 XP -> level 3, 80/300 into level 3.
   IntelligenceSourceChanged connectedSource({ProviderFailure? failure}) {
     return IntelligenceSourceChanged(
       accountId: 'github:octocat',
@@ -150,28 +150,29 @@ void main() {
 
       // Pin the engine output the UI is rendering.
       final level = bloc.state.intelligence.level;
-      expect(level.level, 2);
-      expect(level.totalXp, 215);
-      expect(level.xpIntoLevel, 115);
-      expect(level.xpForNextLevel, 200);
+      expect(level.level, 3);
+      expect(level.totalXp, 380);
+      expect(level.xpIntoLevel, 80);
+      expect(level.xpForNextLevel, 300);
 
       // Level hero bound to the engine's output.
       expect(find.byType(ProgressLevelCard), findsOneWidget);
-      expect(find.text('LEVEL 2'), findsOneWidget);
-      expect(find.text('RISING DEVELOPER'), findsOneWidget);
-      expect(find.text('57%'), findsOneWidget); // 115/200 floats to 57.49…
-      expect(find.text('85 XP TO LEVEL 3'), findsOneWidget);
-      expect(find.text('215 TOTAL XP'), findsOneWidget);
+      expect(find.text('LEVEL 3'), findsOneWidget);
+      expect(find.text('CONTRIBUTOR'), findsOneWidget);
+      expect(find.text('27%'), findsOneWidget); // 80/300 rounds to 27%.
+      expect(find.text('220 XP TO LEVEL 4'), findsOneWidget);
+      expect(find.text('380 TOTAL XP'), findsOneWidget);
 
       // Stats row: streak, XP and badge count.
       expect(find.text('4'), findsOneWidget); // streak days
-      expect(find.text('215'), findsOneWidget); // total XP
+      expect(find.text('380'), findsOneWidget); // total XP
 
       // XP sources explain where the XP came from. 'Achievements' appears
       // twice: once as an XP source row, once as the section header. Reward
       // chips on quest/achievement cards legitimately repeat some amounts.
       expect(find.text('XP SOURCES'), findsOneWidget);
       expect(find.text('Achievements'), findsNWidgets(2));
+      expect(find.text('Quests'), findsOneWidget);
       expect(find.text('+60 XP'), findsWidgets); // century club + week quest
       expect(find.text('+40 XP'), findsWidgets);
       expect(find.text('+115 XP'), findsOneWidget); // breakdown row only
@@ -366,7 +367,7 @@ void main() {
   });
 
   group('ProgressXpBreakdownCard', () {
-    testWidgets('breaks XP into activity, consistency and achievements', (
+    testWidgets('breaks XP into activity, consistency, achievements and quests', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -382,7 +383,8 @@ void main() {
                 activityXp: 60,
                 activeDayXp: 40,
                 achievementXp: 75,
-                totalXp: 175,
+                questXp: 25,
+                totalXp: 200,
                 eventsCounted: 2,
               ),
             ),
@@ -393,6 +395,8 @@ void main() {
       expect(find.text('Activity'), findsOneWidget);
       expect(find.text('Consistency'), findsOneWidget);
       expect(find.text('Achievements'), findsOneWidget);
+      expect(find.text('Quests'), findsOneWidget);
+      expect(find.text('+25 XP'), findsOneWidget);
       expect(find.text('+60 XP'), findsOneWidget);
       expect(find.text('+40 XP'), findsOneWidget);
       expect(find.text('+75 XP'), findsOneWidget);
