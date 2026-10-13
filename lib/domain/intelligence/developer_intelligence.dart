@@ -148,6 +148,10 @@ class DeveloperIntelligenceEngine {
       activities: activities,
       activeDays: metrics.activeDays,
       achievementXp: achievementXp,
+      questXp: _questXp(
+        progression.completedQuestKeys,
+        questEvaluation.newlyCompletedKeys,
+      ),
     );
 
     return DeveloperIntelligence(
@@ -275,6 +279,7 @@ class DeveloperIntelligenceEngine {
     required List<DeveloperActivity> activities,
     required int activeDays,
     required int achievementXp,
+    required int questXp,
   }) {
     final byActivityType = <DeveloperActivityType, int>{};
     var activityXp = 0;
@@ -295,9 +300,26 @@ class DeveloperIntelligenceEngine {
       activityXp: activityXp,
       activeDayXp: activeDayXp,
       achievementXp: achievementXp,
-      totalXp: activityXp + activeDayXp + achievementXp,
+      questXp: questXp,
+      totalXp: activityXp + activeDayXp + achievementXp + questXp,
       eventsCounted: eventsCounted,
     );
+  }
+
+  /// Rewards each completed quest instance once, including persisted history.
+  /// Unknown/retired quest IDs are ignored rather than assigned guessed XP.
+  static int _questXp(Set<String> recordedKeys, Set<String> newlyCompletedKeys) {
+    final completedKeys = {...recordedKeys, ...newlyCompletedKeys};
+    final rewardsById = {
+      for (final quest in QuestCatalog.all) quest.id: quest.xpReward,
+    };
+    var total = 0;
+    for (final key in completedKeys) {
+      final separator = key.indexOf('@');
+      if (separator <= 0) continue;
+      total += rewardsById[key.substring(0, separator)] ?? 0;
+    }
+    return total;
   }
 
   // --- Achievements -------------------------------------------------------
