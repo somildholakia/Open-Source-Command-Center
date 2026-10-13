@@ -199,186 +199,186 @@ void main() {
 
     testWidgets('shows a stale-data notice when a refresh fails on top of '
         'loaded data', (tester) async {
-      final bloc = blocWithSource();
-      addTearDown(bloc.close);
-
-      await pumpPage(tester, bloc);
-      expect(find.byType(ProgressLevelCard), findsOneWidget);
-
-      // A later snapshot keeps the data but reports a failed refresh.
-      bloc.add(connectedSource(failure: const ApiUnavailable(statusCode: 503)));
-      await pumpPage(tester, bloc);
-
-      expect(bloc.state.isStale, isTrue);
-      expect(find.textContaining('last data that synced'), findsOneWidget);
-      expect(find.text('Retry'), findsOneWidget);
-      expect(find.byType(ProgressLevelCard), findsOneWidget);
-    });
-  });
-
-  group('ProgressLevelCard', () {
-    testWidgets('renders the level curve values it is handed', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.darkTheme,
-          home: Scaffold(
-            body: ProgressLevelCard(level: LevelSystem.compute(250)),
-          ),
-        ),
-      );
-
-      expect(find.text('LEVEL 2'), findsOneWidget);
-      expect(find.text('150 / 200 XP'), findsOneWidget);
-      expect(find.text('75%'), findsOneWidget);
-      expect(find.text('50 XP TO LEVEL 3'), findsOneWidget);
-      expect(find.text('250 TOTAL XP'), findsOneWidget);
-    });
-
-    testWidgets('announces level progress for screen readers', (tester) async {
-      final semantics = tester.ensureSemantics();
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.darkTheme,
-          home: Scaffold(
-            body: ProgressLevelCard(level: LevelSystem.compute(150)),
-          ),
-        ),
-      );
-      // Let the finite XP-bar reveal finish so the announced percentage is
-      // the final one (25% of level 2 at 150 XP).
-      for (var i = 0; i < 15; i++) {
-        await tester.pump(const Duration(milliseconds: 50));
-      }
-
-      expect(
-        find.bySemanticsLabel(RegExp('Level 2 progress 25 percent')),
-        findsOneWidget,
-      );
-
-      semantics.dispose();
-    });
-  });
-
-  group('ProgressAchievementCard', () {
-    testWidgets('shows progress toward a locked achievement', (tester) async {
-      final definition = AchievementCatalog.all.firstWhere(
-        (a) => a.id == 'week_storm',
-      );
-      final status = AchievementStatus(
-        definition: definition,
-        unlocked: false,
-        progress: 3,
-      );
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.darkTheme,
-          home: Scaffold(
-            body: ProgressAchievementCard(status: status, now: now),
-          ),
-        ),
-      );
-
-      expect(find.text('Storm Week'), findsOneWidget);
-      expect(find.text('Stay active for 7 days in a row.'), findsOneWidget);
-      expect(find.text('3 / 7'), findsOneWidget);
-      expect(find.text('LOCKED'), findsOneWidget);
-      expect(find.text('+70 XP'), findsOneWidget);
-    });
-
-    testWidgets('shows the unlock time for a recorded unlock', (tester) async {
-      final definition = AchievementCatalog.all.firstWhere(
-        (a) => a.id == 'first_merge',
-      );
-      final status = AchievementStatus(
-        definition: definition,
-        unlocked: true,
-        progress: 2,
-        unlockedAt: now.toUtc().subtract(const Duration(hours: 2)),
-      );
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.darkTheme,
-          home: Scaffold(
-            body: ProgressAchievementCard(status: status, now: now),
-          ),
-        ),
-      );
-
-      expect(find.text('First Merge'), findsOneWidget);
-      expect(find.text('UNLOCKED'), findsOneWidget);
-      expect(find.text('unlocked 2 hours ago'), findsOneWidget);
-    });
-  });
-
-  group('ProgressQuestCard', () {
-    QuestProgress questOf(String id, {bool completed = false}) {
-      final definition = QuestCatalog.all.firstWhere((q) => q.id == id);
-      return QuestProgress(
-        definition: definition,
-        state: completed ? QuestState.completed : QuestState.available,
-        progress: completed ? definition.target : definition.target - 1,
-        periodKey: definition.periodKey(now),
-        periodEndsAt: definition.periodEndsAt(now),
-      );
-    }
-
-    testWidgets('a completed quest is labeled and fully filled', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.darkTheme,
-          home: Scaffold(
-            body: ProgressQuestCard(
-              quest: questOf('daily_commit', completed: true),
-              now: now,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('DAILY'), findsOneWidget);
-      expect(find.text('Daily Commit'), findsOneWidget);
-      expect(find.text('1 / 1'), findsOneWidget);
-      expect(find.text('COMPLETED'), findsOneWidget);
-      expect(find.text('+20 XP'), findsOneWidget);
-    });
-
-    testWidgets('an active quest counts down to the reset', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.darkTheme,
-          home: Scaffold(
-            body: ProgressQuestCard(
-              quest: questOf('weekly_pull_requests'),
-              now: now,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('WEEKLY'), findsOneWidget);
-      expect(find.text('1 / 2'), findsOneWidget);
-      expect(find.text('RESETS IN 3D 12H'), findsOneWidget);
-    });
-  });
-
-  group('ProgressXpBreakdownCard', () {
-    testWidgets(
-      'breaks XP into activity, consistency, achievements and quests',
-      (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.darkTheme,
-          home: Scaffold(
-            body: ProgressXpBreakdownCard(
-              xp: const XpBreakdown(
-                byActivityType: {
-                  DeveloperActivityType.pullRequestMerged: 50,
-                  DeveloperActivityType.commitPushed: 10,
+       final bloc = blocWithSource();
+       addTearDown(bloc.close);
+ 
+       await pumpPage(tester, bloc);
+       expect(find.byType(ProgressLevelCard), findsOneWidget);
+ 
+       // A later snapshot keeps the data but reports a failed refresh.
+       bloc.add(connectedSource(failure: const ApiUnavailable(statusCode: 503)));
+       await pumpPage(tester, bloc);
+ 
+       expect(bloc.state.isStale, isTrue);
+       expect(find.textContaining('last data that synced'), findsOneWidget);
+       expect(find.text('Retry'), findsOneWidget);
+       expect(find.byType(ProgressLevelCard), findsOneWidget);
+     });
+   });
+ 
+   group('ProgressLevelCard', () {
+     testWidgets('renders the level curve values it is handed', (tester) async {
+       await tester.pumpWidget(
+         MaterialApp(
+           theme: AppTheme.darkTheme,
+           home: Scaffold(
+             body: ProgressLevelCard(level: LevelSystem.compute(250)),
+           ),
+         ),
+       );
+ 
+       expect(find.text('LEVEL 2'), findsOneWidget);
+       expect(find.text('150 / 200 XP'), findsOneWidget);
+       expect(find.text('75%'), findsOneWidget);
+       expect(find.text('50 XP TO LEVEL 3'), findsOneWidget);
+       expect(find.text('250 TOTAL XP'), findsOneWidget);
+     });
+ 
+     testWidgets('announces level progress for screen readers', (tester) async {
+       final semantics = tester.ensureSemantics();
+ 
+       await tester.pumpWidget(
+         MaterialApp(
+           theme: AppTheme.darkTheme,
+           home: Scaffold(
+             body: ProgressLevelCard(level: LevelSystem.compute(150)),
+           ),
+         ),
+       );
+       // Let the finite XP-bar reveal finish so the announced percentage is
+       // the final one (25% of level 2 at 150 XP).
+       for (var i = 0; i < 15; i++) {
+         await tester.pump(const Duration(milliseconds: 50));
+       }
+ 
+       expect(
+         find.bySemanticsLabel(RegExp('Level 2 progress 25 percent')),
+         findsOneWidget,
+       );
+ 
+       semantics.dispose();
+     });
+   });
+ 
+   group('ProgressAchievementCard', () {
+     testWidgets('shows progress toward a locked achievement', (tester) async {
+       final definition = AchievementCatalog.all.firstWhere(
+         (a) => a.id == 'week_storm',
+       );
+       final status = AchievementStatus(
+         definition: definition,
+         unlocked: false,
+         progress: 3,
+       );
+ 
+       await tester.pumpWidget(
+         MaterialApp(
+           theme: AppTheme.darkTheme,
+           home: Scaffold(
+             body: ProgressAchievementCard(status: status, now: now),
+           ),
+         ),
+       );
+ 
+       expect(find.text('Storm Week'), findsOneWidget);
+       expect(find.text('Stay active for 7 days in a row.'), findsOneWidget);
+       expect(find.text('3 / 7'), findsOneWidget);
+       expect(find.text('LOCKED'), findsOneWidget);
+       expect(find.text('+70 XP'), findsOneWidget);
+     });
+ 
+     testWidgets('shows the unlock time for a recorded unlock', (tester) async {
+       final definition = AchievementCatalog.all.firstWhere(
+         (a) => a.id == 'first_merge',
+       );
+       final status = AchievementStatus(
+         definition: definition,
+         unlocked: true,
+         progress: 2,
+         unlockedAt: now.toUtc().subtract(const Duration(hours: 2)),
+       );
+ 
+       await tester.pumpWidget(
+         MaterialApp(
+           theme: AppTheme.darkTheme,
+           home: Scaffold(
+             body: ProgressAchievementCard(status: status, now: now),
+           ),
+         ),
+       );
+ 
+       expect(find.text('First Merge'), findsOneWidget);
+       expect(find.text('UNLOCKED'), findsOneWidget);
+       expect(find.text('unlocked 2 hours ago'), findsOneWidget);
+     });
+   });
+ 
+   group('ProgressQuestCard', () {
+     QuestProgress questOf(String id, {bool completed = false}) {
+       final definition = QuestCatalog.all.firstWhere((q) => q.id == id);
+       return QuestProgress(
+         definition: definition,
+         state: completed ? QuestState.completed : QuestState.available,
+         progress: completed ? definition.target : definition.target - 1,
+         periodKey: definition.periodKey(now),
+         periodEndsAt: definition.periodEndsAt(now),
+       );
+     }
+ 
+     testWidgets('a completed quest is labeled and fully filled', (
+       tester,
+     ) async {
+       await tester.pumpWidget(
+         MaterialApp(
+           theme: AppTheme.darkTheme,
+           home: Scaffold(
+             body: ProgressQuestCard(
+               quest: questOf('daily_commit', completed: true),
+               now: now,
+             ),
+           ),
+         ),
+       );
+ 
+       expect(find.text('DAILY'), findsOneWidget);
+       expect(find.text('Daily Commit'), findsOneWidget);
+       expect(find.text('1 / 1'), findsOneWidget);
+       expect(find.text('COMPLETED'), findsOneWidget);
+       expect(find.text('+20 XP'), findsOneWidget);
+     });
+ 
+     testWidgets('an active quest counts down to the reset', (tester) async {
+       await tester.pumpWidget(
+         MaterialApp(
+           theme: AppTheme.darkTheme,
+           home: Scaffold(
+             body: ProgressQuestCard(
+               quest: questOf('weekly_pull_requests'),
+               now: now,
+             ),
+           ),
+         ),
+       );
+ 
+       expect(find.text('WEEKLY'), findsOneWidget);
+       expect(find.text('1 / 2'), findsOneWidget);
+       expect(find.text('RESETS IN 3D 12H'), findsOneWidget);
+     });
+   });
+ 
+   group('ProgressXpBreakdownCard', () {
+     testWidgets(
+       'breaks XP into activity, consistency, achievements and quests',
+       (tester) async {
+       await tester.pumpWidget(
+         MaterialApp(
+           theme: AppTheme.darkTheme,
+           home: Scaffold(
+             body: ProgressXpBreakdownCard(
+               xp: const XpBreakdown(
+                 byActivityType: {
+                   DeveloperActivityType.pullRequestMerged: 50,
+                   DeveloperActivityType.commitPushed: 10,
                 },
                 activityXp: 60,
                 activeDayXp: 40,
