@@ -131,6 +131,23 @@ void main() {
       expect(metrics.longestStreak, 6); // 10-01 .. 10-06
     });
 
+    test('unknown push size does not count as one commit', () {
+      final intelligence = compute(
+        withActivities: [
+          event(
+            id: 'unknown-push',
+            type: DeveloperActivityType.commitPushed,
+            at: DateTime(2026, 10, 8, 9),
+          ),
+        ],
+        withContributions: null,
+      );
+
+      expect(intelligence.metrics.commits, 0);
+      expect(intelligence.metrics.totalContributions, 1);
+      expect(intelligence.metrics.activityEvents, 1);
+    });
+
     test('repository stars and counts come from the repository list', () {
       final metrics = compute(
         repositories: [
