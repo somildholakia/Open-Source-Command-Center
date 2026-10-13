@@ -45,7 +45,13 @@ class RateLimited extends ProviderFailure {
 
 /// No usable network connection to the provider.
 class NetworkUnavailable extends ProviderFailure {
-  const NetworkUnavailable();
+  /// Operation that could not reach the provider, without request credentials.
+  final String? stage;
+
+  const NetworkUnavailable({this.stage});
+
+  @override
+  List<Object?> get props => [stage];
 }
 
 /// The provider API answered but is unavailable/misbehaving (5xx, bad body).
