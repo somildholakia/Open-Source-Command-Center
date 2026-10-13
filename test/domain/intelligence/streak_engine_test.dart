@@ -95,13 +95,10 @@ void main() {
     });
 
     test('malformed keys cannot inflate streak statistics', () {
-      final stats = StreakEngine.fromActiveDateKeys(
-        {
-          '2026-10-08',
-          '2026-02-30',
-        },
-        now: DateTime(2026, 10, 8, 12),
-      );
+      final stats = StreakEngine.fromActiveDateKeys({
+        '2026-10-08',
+        '2026-02-30',
+      }, now: DateTime(2026, 10, 8, 12));
 
       expect(stats.currentStreak, 1);
       expect(stats.longestStreak, 1);
