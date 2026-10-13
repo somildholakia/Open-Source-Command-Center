@@ -162,13 +162,13 @@ void main() {
     test(
       'invalid and nonpositive calendar counts are ignored',
       () {
-      final intelligence = compute(
+        final intelligence = compute(
         withActivities: const [],
         withContributions: const ContributionSummary(
-          dailyCounts: {
-            '2026-02-30': 50,
-            '2026-10-07': -3,
-            '2026-10-08': 2,
+        dailyCounts: {
+        '2026-02-30': 50,
+        '2026-10-07': -3,
+        '2026-10-08': 2,
           },
         ),
       );
