@@ -114,6 +114,9 @@ class StreakEngine {
       }
     }
     for (final activity in activities) {
+      // Stars remain visible in the activity feed, but are not meaningful
+      // contributions and must not sustain a streak or earn consistency XP.
+      if (activity.type == DeveloperActivityType.starred) continue;
       keys.add(dateKey(activity.timestamp));
     }
     return keys;
