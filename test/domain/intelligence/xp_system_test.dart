@@ -119,16 +119,20 @@ void main() {
   });
 
   group('XpBreakdown', () {
-    test('total XP is activity plus consistency plus achievements', () {
+    test('total XP includes activity, consistency, achievements, and quests', () {
       const breakdown = XpBreakdown(
         activityXp: 120,
         activeDayXp: 30,
         achievementXp: 75,
-        totalXp: 225,
+        questXp: 50,
+        totalXp: 275,
       );
 
       expect(
-        breakdown.activityXp + breakdown.activeDayXp + breakdown.achievementXp,
+        breakdown.activityXp +
+            breakdown.activeDayXp +
+            breakdown.achievementXp +
+            breakdown.questXp,
         breakdown.totalXp,
       );
     });
