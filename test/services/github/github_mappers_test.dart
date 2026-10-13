@@ -130,7 +130,9 @@ void main() {
       expect(activity.commitCount, 3);
     });
 
-    test('does not invent a zero commit count when push size is missing', () {
+    test(
+      'does not invent a zero commit count when push size is missing',
+      () {
       final activity = GitHubMappers.activityFromJson(
         event('PushEvent', {
           'ref': 'refs/heads/feature/cartoon-local-first-redesign',
@@ -146,7 +148,9 @@ void main() {
       expect(activity.commitCount, isNull);
     });
 
-    test('uses payload size when the event omits its commit list', () {
+    test(
+      'uses payload size when the event omits its commit list',
+      () {
       final activity = GitHubMappers.activityFromJson(
         event('PushEvent', {
           'ref': 'refs/heads/main',
