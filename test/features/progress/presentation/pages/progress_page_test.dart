@@ -391,7 +391,7 @@ void main() {
             ),
           ),
         );
-  
+
         expect(find.text('Activity'), findsOneWidget);
         expect(find.text('Consistency'), findsOneWidget);
         expect(find.text('Achievements'), findsOneWidget);
