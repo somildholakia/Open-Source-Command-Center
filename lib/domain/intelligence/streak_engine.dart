@@ -155,11 +155,14 @@ class StreakEngine {
     Set<String> activeDateKeys, {
     DateTime? now,
   }) {
-    if (activeDateKeys.isEmpty) return const StreakStats();
+    final validKeys = activeDateKeys
+        .where((key) => dateFromKey(key) != null)
+        .toSet();
+    if (validKeys.isEmpty) return const StreakStats();
 
     final today = startOfDay(now ?? DateTime.now());
     final todayKey = dateKey(today);
-    final sorted = activeDateKeys.toList()..sort();
+    final sorted = validKeys.toList()..sort();
 
     // --- Longest streak: longest run of consecutive calendar days. ---
     var longest = 1;
@@ -178,7 +181,7 @@ class StreakEngine {
     }
 
     // --- Current streak: consecutive days ending today or yesterday. ---
-    final activeToday = activeDateKeys.contains(todayKey);
+    final activeToday = validKeys.contains(todayKey);
     final yesterday = _previousDay(today);
     final activeYesterday = activeDateKeys.contains(dateKey(yesterday));
 
@@ -199,7 +202,7 @@ class StreakEngine {
       longestStreak: longest,
       activeToday: activeToday,
       lastActivityDate: lastDate,
-      activeDays: activeDateKeys.length,
+      activeDays: validKeys.length,
     );
   }
 
