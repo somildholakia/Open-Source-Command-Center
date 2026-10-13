@@ -140,9 +140,9 @@ class GitHubDeviceFlowClient {
     } on ProviderFailure {
       rethrow;
     } on TimeoutException {
-      throw const NetworkUnavailable();
+      throw const NetworkUnavailable(stage: 'starting GitHub authorization');
     } on http.ClientException {
-      throw const NetworkUnavailable();
+      throw const NetworkUnavailable(stage: 'starting GitHub authorization');
     } catch (e) {
       throw UnknownProviderError(detail: e.toString());
     }
@@ -218,9 +218,9 @@ class GitHubDeviceFlowClient {
     } on ProviderFailure {
       rethrow;
     } on TimeoutException {
-      throw const NetworkUnavailable();
+      throw const NetworkUnavailable(stage: 'checking GitHub authorization');
     } on http.ClientException {
-      throw const NetworkUnavailable();
+      throw const NetworkUnavailable(stage: 'checking GitHub authorization');
     } catch (e) {
       throw UnknownProviderError(detail: e.toString());
     }
