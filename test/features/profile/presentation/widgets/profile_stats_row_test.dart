@@ -83,9 +83,9 @@ void main() {
       expect(find.text('Level'), findsOneWidget);
       expect(find.text('XP'), findsOneWidget);
       expect(find.text('Streak'), findsOneWidget);
-      expect(find.text('3'), findsOneWidget); // streak days
+      expect(find.text('3'), findsNWidgets(2)); // level and streak days
       expect(find.text('days'), findsOneWidget);
-      expect(find.text('RISING DEVELOPER'), findsOneWidget);
+      expect(find.text('CONTRIBUTOR'), findsOneWidget);
       expect(find.text('—'), findsNothing);
     });
 
