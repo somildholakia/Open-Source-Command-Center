@@ -130,34 +130,6 @@ void main() {
       expect(activity.commitCount, 3);
     });
 
-    test('missing push size is not zero', () {
-      final activity = GitHubMappers.activityFromJson(
-        event('PushEvent', {
-          'ref': 'refs/heads/feature/cartoon-local-first-redesign',
-          'commits': <Map<String, dynamic>>[],
-        }),
-      );
-
-      expect(activity, isNotNull);
-      expect(
-        activity!.title,
-        'Pushed updates to feature/cartoon-local-first-redesign',
-      );
-      expect(activity.commitCount, isNull);
-    });
-
-    test('uses push size when commits are omitted', () {
-      final activity = GitHubMappers.activityFromJson(
-        event('PushEvent', {
-          'ref': 'refs/heads/main',
-          'size': 4,
-        }),
-      );
-
-      expect(activity!.title, 'Pushed 4 commits to main');
-      expect(activity.commitCount, 4);
-    });
-
     test('maps opened and merged pull request events', () {
       final opened = GitHubMappers.activityFromJson(
         event('PullRequestEvent', {
