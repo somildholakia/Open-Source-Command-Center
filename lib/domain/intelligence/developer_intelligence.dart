@@ -237,8 +237,13 @@ class DeveloperIntelligenceEngine {
     }
 
     return DeveloperMetrics(
+      // An empty calendar means the provider supplied no usable calendar
+      // data. Fall back to normalized events rather than presenting a false
+      // zero or suppressing contribution quests.
       totalContributions:
-          contributions?.total ?? _contributionEventCount(activities),
+          contributions != null && contributions.dailyCounts.isNotEmpty
+          ? contributions.total
+          : _contributionEventCount(activities),
       activeDays: streak.activeDays,
       commits: commits,
       pullRequestsOpened: pullRequestsOpened,
@@ -396,7 +401,9 @@ class DeveloperIntelligenceEngine {
     }
 
     var contributionsInWindow = calendarContributions;
-    if (dailyCounts == null) {
+    // A missing or empty calendar is unavailable data, not proof that the
+    // developer made zero contributions during this window.
+    if (dailyCounts == null || dailyCounts.isEmpty) {
       for (final events in eventsByDay.values) {
         for (final event in events) {
           if (event.type != DeveloperActivityType.starred) {
