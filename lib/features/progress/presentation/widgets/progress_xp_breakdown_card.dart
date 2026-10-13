@@ -67,6 +67,12 @@ class ProgressXpBreakdownCard extends StatelessWidget {
             value: xp.achievementXp,
             color: AppColors.achievementAccent,
           ),
+          _XpSourceRow(
+            label: 'Quests',
+            description: 'Completed daily and weekly quests',
+            value: xp.questXp,
+            color: AppColors.primaryAccent,
+          ),
           if (topSources.isNotEmpty) ...[
             AppSpacing.vSpaceMd,
             Text(
