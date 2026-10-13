@@ -308,7 +308,10 @@ class DeveloperIntelligenceEngine {
 
   /// Rewards each completed quest instance once, including persisted history.
   /// Unknown/retired quest IDs are ignored rather than assigned guessed XP.
-  static int _questXp(Set<String> recordedKeys, Set<String> newlyCompletedKeys) {
+  static int _questXp(
+    Set<String> recordedKeys,
+    Set<String> newlyCompletedKeys,
+  ) {
     final completedKeys = {...recordedKeys, ...newlyCompletedKeys};
     final rewardsById = {
       for (final quest in QuestCatalog.all) quest.id: quest.xpReward,
