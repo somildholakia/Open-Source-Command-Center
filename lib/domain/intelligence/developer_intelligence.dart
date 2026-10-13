@@ -411,8 +411,9 @@ class DeveloperIntelligenceEngine {
         final date = StreakEngine.dateFromKey(entry.key);
         if (date == null) continue;
         if (date.isBefore(from) || date.isAfter(to)) continue;
+        if (entry.value <= 0) continue;
         calendarContributions += entry.value;
-        if (entry.value > 0) activeDays.add(entry.key);
+        activeDays.add(entry.key);
       }
     }
 
