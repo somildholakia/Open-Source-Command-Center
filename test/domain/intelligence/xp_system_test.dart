@@ -23,10 +23,10 @@ void main() {
       );
     });
 
-    test('a push without a known commit count counts as a single commit', () {
+    test('a push without a known commit count earns no commit XP', () {
       expect(
         XpRules.forActivity(activityOf(DeveloperActivityType.commitPushed)),
-        XpRules.perCommit,
+        0,
       );
     });
 
