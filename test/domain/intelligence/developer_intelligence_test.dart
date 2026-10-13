@@ -224,14 +224,15 @@ void main() {
   });
 
   group('XP and levels', () {
-    test('adds activity, consistency and achievement XP', () {
+    test('adds activity, consistency, achievement, and quest XP', () {
       final intelligence = compute();
       final xp = intelligence.xp;
 
       expect(xp.activityXp, 115); // 10 + 50 + 25 + 25 + 5
       expect(xp.activeDayXp, 80); // 8 active days * 10
       expect(xp.achievementXp, 115); // 25 + 40 + 50
-      expect(xp.totalXp, 310);
+      expect(xp.questXp, 185); // 25 + 20 + 60 + 80
+      expect(xp.totalXp, 495);
       expect(xp.eventsCounted, 5);
       expect(xp.xpFor(DeveloperActivityType.commitPushed), 15);
       expect(xp.xpFor(DeveloperActivityType.pullRequestMerged), 50);
@@ -244,11 +245,11 @@ void main() {
 
       expect(level.level, 3);
       expect(level.levelTitle, 'CONTRIBUTOR');
-      expect(level.totalXp, 310);
-      expect(level.xpIntoLevel, 10);
+      expect(level.totalXp, 495);
+      expect(level.xpIntoLevel, 195);
       expect(level.xpForNextLevel, 300);
-      expect(level.xpRemaining, 290);
-      expect(level.progress, closeTo(10 / 300, 0.0001));
+      expect(level.xpRemaining, 105);
+      expect(level.progress, closeTo(195 / 300, 0.0001));
     });
 
     test('star achievements fold their reward into total XP', () {
@@ -262,7 +263,8 @@ void main() {
         isTrue,
       );
       expect(intelligence.xp.achievementXp, 175); // + 60
-      expect(intelligence.xp.totalXp, 370);
+      expect(intelligence.xp.questXp, 185);
+      expect(intelligence.xp.totalXp, 555);
     });
   });
 
@@ -352,6 +354,7 @@ void main() {
       expect(quests['weekly_issues']!.isCompleted, isTrue);
       expect(quests['daily_commit']!.isCompleted, isFalse); // new period
       expect(intelligence.completedQuestCount, 3);
+      expect(intelligence.xp.questXp, 110); // persisted daily + weekly rewards
       expect(intelligence.newlyCompletedQuestKeys, isEmpty);
     });
   });
