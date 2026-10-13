@@ -159,7 +159,9 @@ void main() {
       expect(intelligence.metrics.eventsToday, 3);
     });
 
-    test('invalid and nonpositive calendar counts are ignored', () {
+    test(
+      'invalid and nonpositive calendar counts are ignored',
+      () {
       final intelligence = compute(
         withActivities: const [],
         withContributions: const ContributionSummary(
@@ -175,8 +177,9 @@ void main() {
       expect(intelligence.metrics.contributionsToday, 2);
       expect(intelligence.metrics.contributionsThisWeek, 2);
       expect(intelligence.metrics.activeDays, 1);
-      expect(intelligence.metrics.activeDaysThisWeek, 1);
-    });
+        expect(intelligence.metrics.activeDaysThisWeek, 1);
+      },
+    );
 
     test('unknown push size does not count as one commit', () {
       final intelligence = compute(
