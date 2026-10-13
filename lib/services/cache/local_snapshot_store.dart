@@ -20,7 +20,10 @@ class LocalSnapshot {
 
   bool isStale({required Duration maxAge, DateTime? now}) {
     final current = now ?? DateTime.now();
-    return current.difference(cachedAt) > maxAge;
+    final age = current.difference(cachedAt);
+    // A future timestamp can result from device clock changes or corrupt
+    // cache data. Treat it as stale instead of trusting it indefinitely.
+    return age.isNegative || age > maxAge;
   }
 
   Map<String, dynamic> toJson() => {
