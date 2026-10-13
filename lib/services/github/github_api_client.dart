@@ -41,9 +41,9 @@ class GitHubApiClient {
     } on ProviderFailure {
       rethrow;
     } on TimeoutException {
-      throw const NetworkUnavailable();
+      throw NetworkUnavailable(stage: 'GitHub API request $path');
     } on http.ClientException {
-      throw const NetworkUnavailable();
+      throw NetworkUnavailable(stage: 'GitHub API request $path');
     } catch (e) {
       throw UnknownProviderError(detail: e.toString());
     }
